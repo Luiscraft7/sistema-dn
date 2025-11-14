@@ -13,11 +13,29 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  // Configuración de iconos y colores por negocio
+  const negocioConfig = {
+    'Lavacar': { icon: '🚗', color: '#3b82f6', emoji: '💧' },
+    'Impresión': { icon: '🖨️', color: '#8b5cf6', emoji: '📄' },
+    'Cabinas': { icon: '💻', color: '#10b981', emoji: '🌐' }
+  };
+
+  const negocioNombre = user?.negocio?.nombre || 
+    (user?.negocioId === 1 ? 'Lavacar' : user?.negocioId === 2 ? 'Impresión' : user?.negocioId === 3 ? 'Cabinas' : null);
+  
+  const config = negocioNombre ? negocioConfig[negocioNombre] : null;
+
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${negocioNombre ? `navbar-${negocioNombre.toLowerCase()}` : ''}`}>
       <div className="container navbar-container">
         <Link to="/dashboard" className="navbar-brand">
-          Sistema DN
+          {config && <span className="navbar-icon">{config.icon}</span>}
+          <span>Sistema DN</span>
+          {!isDueno && config && (
+            <span className="navbar-negocio-badge" style={{ backgroundColor: config.color }}>
+              {config.emoji} {negocioNombre}
+            </span>
+          )}
         </Link>
 
         <div className="navbar-menu">

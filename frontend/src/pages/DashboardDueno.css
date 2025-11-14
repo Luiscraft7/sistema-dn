@@ -69,25 +69,51 @@
 .negocio-card {
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
   cursor: pointer;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.negocio-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .negocio-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.negocio-card:hover::before {
+  opacity: 1;
 }
 
 .negocio-nombre {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
+  transition: color 0.2s;
+}
+
+.negocio-card:hover .negocio-nombre {
+  color: var(--primary-color);
 }
 
 .negocio-trabajos {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* Trabajos */

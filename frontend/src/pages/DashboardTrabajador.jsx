@@ -317,12 +317,27 @@ const DashboardTrabajador = () => {
     t.estadoActual === 'pendiente' || t.estadoActual === 'en_proceso'
   );
 
+  // Configuración de iconos por negocio
+  const negocioConfig = {
+    'Lavacar': { icon: '🚗', emoji: '💧', clase: 'lavacar' },
+    'Impresión': { icon: '🖨️', emoji: '📄', clase: 'impresion' },
+    'Cabinas': { icon: '💻', emoji: '🌐', clase: 'cabinas' }
+  };
+
+  const config = negocioNombre ? negocioConfig[negocioNombre] : { icon: '📋', emoji: '❓', clase: '' };
+
   return (
     <div className="dashboard-trabajador">
       {/* Header */}
       <div className="container">
-        <h1>👋 Hola, {user.nombre}</h1>
-        <span className="negocio-badge">{negocioNombre || 'Sin negocio'}</span>
+        <h1>
+          <span className="dashboard-header-icon">{config.icon}</span>
+          <span>Hola, {user.nombre}</span>
+        </h1>
+        <span className={`negocio-badge ${config.clase}`}>
+          <span className="negocio-badge-icon">{config.emoji}</span>
+          <span>{negocioNombre || 'Sin negocio'}</span>
+        </span>
       </div>
 
       {/* Filtros */}
@@ -540,7 +555,10 @@ const DashboardTrabajador = () => {
         <div className="modal-overlay" onClick={handleCerrarModalTrabajo} key={`modal-${user?.id}`}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Nuevo Trabajo</h2>
+              <h2>
+                <span style={{ marginRight: '0.5rem' }}>{config.icon}</span>
+                Nuevo Trabajo - {negocioNombre}
+              </h2>
               <button className="btn-close" onClick={handleCerrarModalTrabajo}>
                 ×
               </button>

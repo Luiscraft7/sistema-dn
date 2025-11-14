@@ -123,18 +123,29 @@ const DashboardDueno = () => {
       <section className="dashboard-section">
         <h2 className="section-title">Negocios</h2>
         <div className="negocios-grid">
-          {negocios.map((negocio) => (
-            <Link
-              key={negocio.id}
-              to={`/negocios/${negocio.id}/trabajos`}
-              className="negocio-card card"
-            >
-              <h3 className="negocio-nombre">{negocio.nombre}</h3>
-              <p className="negocio-trabajos">
-                {negocio._count?.trabajos || 0} trabajos
-              </p>
-            </Link>
-          ))}
+          {negocios.map((negocio) => {
+            const iconConfig = {
+              'Lavacar': { icon: '🚗', color: '#3b82f6', emoji: '💧' },
+              'Impresión': { icon: '🖨️', color: '#8b5cf6', emoji: '📄' },
+              'Cabinas': { icon: '💻', color: '#10b981', emoji: '🌐' }
+            };
+            const config = iconConfig[negocio.nombre] || { icon: '📋', color: '#6b7280', emoji: '❓' };
+            
+            return (
+              <Link
+                key={negocio.id}
+                to={`/negocios/${negocio.id}/trabajos`}
+                className="negocio-card card"
+                style={{ borderTop: `4px solid ${config.color}` }}
+              >
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{config.icon}</div>
+                <h3 className="negocio-nombre">{negocio.nombre}</h3>
+                <p className="negocio-trabajos">
+                  {config.emoji} {negocio._count?.trabajos || 0} trabajos
+                </p>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
