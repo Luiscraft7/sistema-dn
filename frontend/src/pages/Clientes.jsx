@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clientesApi } from '../services/api';
+import { clientesApi, trabajosApi } from '../services/api';
 import './Clientes.css';
 
 const Clientes = () => {
@@ -7,6 +7,9 @@ const Clientes = () => {
   const [buscar, setBuscar] = useState('');
   const [loading, setLoading] = useState(true);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const [trabajosCliente, setTrabajosCliente] = useState([]);
+  const [loadingTrabajos, setLoadingTrabajos] = useState(false);
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: '',
     telefono: '',
@@ -44,6 +47,47 @@ const Clientes = () => {
     } catch (error) {
       alert('Error al crear cliente: ' + error.message);
     }
+  };
+
+  const handleVerTrabajos = async (cliente) => {
+    setClienteSeleccionado(cliente);
+    setLoadingTrabajos(true);
+    try {
+      const trabajos = await trabajosApi.getAll();
+      // Filtrar trabajos del cliente seleccionado
+      const trabajosDelCliente = trabajos.filter(t => t.clienteId === cliente.id);
+      setTrabajosCliente(trabajosDelCliente);
+    } catch (error) {
+      console.error('Error al cargar trabajos:', error);
+      alert('Error al cargar los trabajos del cliente');
+    } finally {
+      setLoadingTrabajos(false);
+    }
+  };
+
+  const cerrarModalTrabajos = () => {
+    setClienteSeleccionado(null);
+    setTrabajosCliente([]);
+  };
+
+  const getEstadoBadge = (estado) => {
+    const badges = {
+      pendiente: 'badge-pending',
+      en_proceso: 'badge-progress',
+      completado: 'badge-completed',
+      cancelado: 'badge-cancelled'
+    };
+    return badges[estado] || '';
+  };
+
+  const getEstadoTexto = (estado) => {
+    const textos = {
+      pendiente: 'Pendiente',
+      en_proceso: 'En Proceso',
+      completado: 'Completado',
+      cancelado: 'Cancelado'
+    };
+    return textos[estado] || estado;
   };
 
   if (loading) {
@@ -154,9 +198,12 @@ const Clientes = () => {
               )}
               
               <div className="cliente-meta">
-                <span className="cliente-trabajos">
+                <button
+                  className="cliente-trabajos-btn"
+                  onClick={() => handleVerTrabajos(cliente)}
+                >
                   {cliente._count?.trabajos || 0} trabajo(s)
-                </span>
+                </button>
                 <span className="cliente-fecha">
                   Desde {new Date(cliente.creadoEn).toLocaleDateString('es-ES')}
                 </span>
@@ -165,6 +212,61 @@ const Clientes = () => {
           ))
         )}
       </div>
+
+      {/* Modal de trabajos del cliente */}
+      {clienteSeleccionado && (
+        <div className="modal-overlay" onClick={cerrarModalTrabajos}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Trabajos de {clienteSeleccionado.nombre}</h2>
+              <button className="modal-close" onClick={cerrarModalTrabajos}>
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {loadingTrabajos ? (
+                <div className="loading">Cargando trabajos...</div>
+              ) : trabajosCliente.length === 0 ? (
+                <p className="empty-message">Este cliente no tiene trabajos registrados</p>
+              ) : (
+                <div className="trabajos-cliente-list">
+                  {trabajosCliente.map((trabajo) => (
+                    <div key={trabajo.id} className="trabajo-cliente-item">
+                      <div className="trabajo-header">
+                        <span className="trabajo-negocio-badge">
+                          {trabajo.negocio.nombre}
+                        </span>
+                        <span className={`badge ${getEstadoBadge(trabajo.estadoActual)}`}>
+                          {getEstadoTexto(trabajo.estadoActual)}
+                        </span>
+                      </div>
+                      
+                      <p className="trabajo-descripcion">{trabajo.descripcion}</p>
+                      
+                      <div className="trabajo-detalles">
+                        <span className="trabajo-precio">
+                          ₡{trabajo.precioEstimado ? trabajo.precioEstimado.toLocaleString('es-CR') : '0'}
+                        </span>
+                        <span className="trabajo-fecha">
+                          {new Date(trabajo.fechaCreacion).toLocaleDateString('es-CR', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric' 
+                          })} • {new Date(trabajo.fechaCreacion).toLocaleTimeString('es-CR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

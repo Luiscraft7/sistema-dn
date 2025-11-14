@@ -142,6 +142,16 @@ const DashboardDueno = () => {
                     <div className="trabajo-negocio">{trabajo.negocio.nombre}</div>
                     <div className="trabajo-cliente">{trabajo.cliente.nombre}</div>
                     <div className="trabajo-descripcion">{trabajo.descripcion}</div>
+                    <div className="trabajo-fecha">
+                      {new Date(trabajo.fechaCreacion).toLocaleDateString('es-CR', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                      })} • {new Date(trabajo.fechaCreacion).toLocaleTimeString('es-CR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </div>
                   </div>
                   <div className="trabajo-meta">
                     <span className={`badge badge-animated ${getEstadoBadge(trabajo.estadoActual)}`}>
