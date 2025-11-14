@@ -177,3 +177,64 @@ export const updateEstadoTrabajo = async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar estado del trabajo' });
   }
 };
+
+export const updateTrabajo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { descripcion, precioEstimado } = req.body;
+
+    // Verificar que el trabajo existe
+    const trabajoExiste = await prisma.trabajo.findUnique({
+      where: { id: parseInt(id) },
+      include: { negocio: true }
+    });
+
+    if (!trabajoExiste) {
+      return res.status(404).json({ error: 'Trabajo no encontrado' });
+    }
+
+    // Si es trabajador, verificar que pertenece al negocio del trabajo
+    if (req.user.rol === 'trabajador' && req.user.negocioId !== trabajoExiste.negocioId) {
+      return res.status(403).json({ error: 'No tienes permiso para editar este trabajo' });
+    }
+
+    // Preparar datos a actualizar
+    const dataToUpdate = {};
+    
+    if (descripcion !== undefined && descripcion.trim()) {
+      dataToUpdate.descripcion = descripcion.trim();
+    }
+    
+    if (precioEstimado !== undefined) {
+      dataToUpdate.precioEstimado = precioEstimado ? parseFloat(precioEstimado) : null;
+    }
+
+    // Actualizar trabajo
+    const trabajo = await prisma.trabajo.update({
+      where: { id: parseInt(id) },
+      data: dataToUpdate,
+      include: {
+        negocio: true,
+        cliente: true,
+        historialEstados: {
+          include: {
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                username: true
+              }
+            }
+          },
+          orderBy: { fechaHora: 'desc' }
+        }
+      }
+    });
+
+    res.json(trabajo);
+
+  } catch (error) {
+    console.error('Error al actualizar trabajo:', error);
+    res.status(500).json({ error: 'Error al actualizar trabajo' });
+  }
+};

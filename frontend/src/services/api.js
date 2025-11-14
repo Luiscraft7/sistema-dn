@@ -99,6 +99,19 @@ export const trabajosApi = {
     return handleResponse(response);
   },
 
+  update: async (id, data) => {
+    // data puede ser { descripcion, precioEstimado }
+    const response = await fetch(`${API_URL}/trabajos/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(response);
+  },
+
   updateEstado: async (id, data) => {
     // data puede ser { estado, nota }
     const response = await fetch(`${API_URL}/trabajos/${id}/estado`, {

@@ -144,8 +144,10 @@ const DashboardDueno = () => {
                     <div className="trabajo-descripcion">{trabajo.descripcion}</div>
                   </div>
                   <div className="trabajo-meta">
-                    <span className={`badge ${getEstadoBadge(trabajo.estadoActual)}`}>
+                    <span className={`badge badge-animated ${getEstadoBadge(trabajo.estadoActual)}`}>
+                      {trabajo.estadoActual === 'en_proceso' && <span className="pulse-dot"></span>}
                       {getEstadoTexto(trabajo.estadoActual)}
+                      {trabajo.estadoActual === 'completado' && <span className="checkmark-small">✓</span>}
                     </span>
                   </div>
                 </div>

@@ -1,61 +1,136 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { trabajosApi } from '../services/api';
+import { trabajosApi, clientesApi } from '../services/api';
 import usePolling from '../hooks/usePolling';
 import './DashboardTrabajador.css';
 
 const DashboardTrabajador = () => {
   const { user } = useAuth();
   const [trabajos, setTrabajos] = useState([]);
+  const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actualizando, setActualizando] = useState(false);
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [trabajoSeleccionado, setTrabajoSeleccionado] = useState(null);
-  const [nota, setNota] = useState('');
+  const [mostrarModalTrabajo, setMostrarModalTrabajo] = useState(false);
+  const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
+  const [mostrarFormCliente, setMostrarFormCliente] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState('todos');
+  
+  // Form nuevo trabajo
+  const [clienteSeleccionado, setClienteSeleccionado] = useState('');
+  const [descripcionTrabajo, setDescripcionTrabajo] = useState('');
+  const [precioEstimado, setPrecioEstimado] = useState('');
+  
+  // Form editar trabajo
+  const [trabajoEditar, setTrabajoEditar] = useState(null);
+  
+  // Form nuevo cliente
+  const [nuevoCliente, setNuevoCliente] = useState({
+    nombre: '',
+    telefono: ''
+  });
 
-  const loadTrabajos = async () => {
+  const loadData = async () => {
     if (!user?.negocioId) return;
     
     try {
-      setActualizando(true);
-      const data = await trabajosApi.getAll({ negocioId: user.negocioId });
-      setTrabajos(data);
+      const [trabajosData, clientesData] = await Promise.all([
+        trabajosApi.getAll({ negocioId: user.negocioId }),
+        clientesApi.getAll()
+      ]);
+      setTrabajos(trabajosData);
+      setClientes(clientesData);
     } catch (error) {
-      console.error('Error al cargar trabajos:', error);
+      console.error('Error al cargar datos:', error);
     } finally {
       setLoading(false);
-      setActualizando(false);
     }
   };
 
   useEffect(() => {
-    loadTrabajos();
+    loadData();
   }, [user]);
 
   // Polling cada 10 segundos
   usePolling(() => {
-    if (!loading) loadTrabajos();
+    if (!loading) loadData();
   }, 10000);
 
-  const handleCambiarEstado = (trabajo, nuevoEstado) => {
-    setTrabajoSeleccionado({ ...trabajo, nuevoEstado });
-    setNota('');
-    setMostrarModal(true);
+  const handleCrearCliente = async (e) => {
+    e.preventDefault();
+    try {
+      const cliente = await clientesApi.create(nuevoCliente);
+      setClientes([...clientes, cliente]);
+      setClienteSeleccionado(cliente.id.toString());
+      setNuevoCliente({ nombre: '', telefono: '' });
+      setMostrarFormCliente(false);
+    } catch (error) {
+      alert('Error al crear cliente: ' + error.message);
+    }
   };
 
-  const confirmarCambioEstado = async () => {
+  const handleCrearTrabajo = async (e) => {
+    e.preventDefault();
+    if (!clienteSeleccionado || !descripcionTrabajo.trim()) {
+      alert('Selecciona un cliente y describe el trabajo');
+      return;
+    }
+
     try {
-      await trabajosApi.updateEstado(trabajoSeleccionado.id, {
-        estado: trabajoSeleccionado.nuevoEstado,
-        nota: nota.trim() || undefined
+      await trabajosApi.create({
+        negocioId: user.negocioId,
+        clienteId: parseInt(clienteSeleccionado),
+        descripcion: descripcionTrabajo.trim(),
+        precioEstimado: precioEstimado ? parseFloat(precioEstimado) : null
       });
-      setMostrarModal(false);
-      setTrabajoSeleccionado(null);
-      setNota('');
-      loadTrabajos();
+      
+      // Resetear form
+      setClienteSeleccionado('');
+      setDescripcionTrabajo('');
+      setPrecioEstimado('');
+      setMostrarModalTrabajo(false);
+      
+      // Recargar trabajos
+      loadData();
+    } catch (error) {
+      alert('Error al crear trabajo: ' + error.message);
+    }
+  };
+
+  const handleCambiarEstado = async (trabajoId, nuevoEstado) => {
+    try {
+      await trabajosApi.updateEstado(trabajoId, { estado: nuevoEstado });
+      loadData();
     } catch (error) {
       alert('Error al actualizar estado: ' + error.message);
+    }
+  };
+
+  const handleAbrirEditar = (trabajo) => {
+    setTrabajoEditar({
+      id: trabajo.id,
+      descripcion: trabajo.descripcion,
+      precioEstimado: trabajo.precioEstimado || ''
+    });
+    setMostrarModalEditar(true);
+  };
+
+  const handleGuardarEdicion = async (e) => {
+    e.preventDefault();
+    if (!trabajoEditar.descripcion.trim()) {
+      alert('La descripción es obligatoria');
+      return;
+    }
+
+    try {
+      await trabajosApi.update(trabajoEditar.id, {
+        descripcion: trabajoEditar.descripcion.trim(),
+        precioEstimado: trabajoEditar.precioEstimado ? parseFloat(trabajoEditar.precioEstimado) : null
+      });
+      
+      setMostrarModalEditar(false);
+      setTrabajoEditar(null);
+      loadData();
+    } catch (error) {
+      alert('Error al editar trabajo: ' + error.message);
     }
   };
 
@@ -82,7 +157,7 @@ const DashboardTrabajador = () => {
   if (loading) {
     return (
       <div className="container">
-        <div className="loading">Cargando trabajos...</div>
+        <div className="loading">⏳ Cargando...</div>
       </div>
     );
   }
@@ -91,149 +166,128 @@ const DashboardTrabajador = () => {
     return (
       <div className="container">
         <div className="card">
-          <p>No tienes un negocio asignado. Contacta al administrador.</p>
+          <p>❌ No tienes un negocio asignado. Contacta al administrador.</p>
         </div>
       </div>
     );
   }
 
-  const trabajosPendientes = trabajos.filter(t => t.estadoActual === 'pendiente');
-  const trabajosEnProceso = trabajos.filter(t => t.estadoActual === 'en_proceso');
-  const trabajosCompletados = trabajos.filter(t => t.estadoActual === 'completado');
+  // Filtrar trabajos
+  const trabajosFiltrados = filtroEstado === 'todos' 
+    ? trabajos 
+    : trabajos.filter(t => t.estadoActual === filtroEstado);
+
+  const trabajosActivos = trabajos.filter(t => 
+    t.estadoActual === 'pendiente' || t.estadoActual === 'en_proceso'
+  );
 
   return (
-    <div className="container dashboard-trabajador">
-      <div className="page-header">
-        <div>
-          <h1>Mi Espacio de Trabajo</h1>
-          <p className="negocio-nombre">
-            📍 {user.negocio?.nombre || 'Negocio no especificado'}
-          </p>
-        </div>
-        {actualizando && <span className="actualizando">↻ Actualizando...</span>}
+    <div className="dashboard-trabajador">
+      {/* Header */}
+      <div className="container">
+        <h1>👋 Hola, {user.nombre}</h1>
+        <span className="negocio-badge">{user.negocio?.nombre}</span>
       </div>
 
-      {/* Estadísticas */}
-      <div className="stats-grid">
-        <div className="stat-card card">
-          <div className="stat-icon pendiente">⏳</div>
-          <div className="stat-content">
-            <div className="stat-value">{trabajosPendientes.length}</div>
-            <div className="stat-label">Pendientes</div>
-          </div>
-        </div>
-
-        <div className="stat-card card">
-          <div className="stat-icon proceso">🔧</div>
-          <div className="stat-content">
-            <div className="stat-value">{trabajosEnProceso.length}</div>
-            <div className="stat-label">En Proceso</div>
-          </div>
-        </div>
-
-        <div className="stat-card card">
-          <div className="stat-icon completado">✓</div>
-          <div className="stat-content">
-            <div className="stat-value">{trabajosCompletados.length}</div>
-            <div className="stat-label">Completados Hoy</div>
-          </div>
+      {/* Filtros */}
+      <div className="container">
+        <div className="estado-filters">
+          <button
+            className={`filter-btn ${filtroEstado === 'todos' ? 'active' : ''}`}
+            onClick={() => setFiltroEstado('todos')}
+          >
+            Todos ({trabajos.length})
+          </button>
+          <button
+            className={`filter-btn ${filtroEstado === 'pendiente' ? 'active' : ''}`}
+            onClick={() => setFiltroEstado('pendiente')}
+          >
+            ⏳ Pendientes ({trabajos.filter(t => t.estadoActual === 'pendiente').length})
+          </button>
+          <button
+            className={`filter-btn ${filtroEstado === 'en_proceso' ? 'active' : ''}`}
+            onClick={() => setFiltroEstado('en_proceso')}
+          >
+            🔧 Trabajando ({trabajos.filter(t => t.estadoActual === 'en_proceso').length})
+          </button>
+          <button
+            className={`filter-btn ${filtroEstado === 'completado' ? 'active' : ''}`}
+            onClick={() => setFiltroEstado('completado')}
+          >
+            ✅ Completados ({trabajos.filter(t => t.estadoActual === 'completado').length})
+          </button>
         </div>
       </div>
 
-      {/* Trabajos */}
-      <div className="trabajos-section">
-        <h2>Trabajos Activos</h2>
-        
-        {trabajos.length === 0 ? (
-          <div className="card">
-            <p>No hay trabajos en este momento.</p>
+      {/* Lista de trabajos */}
+      <div className="container">
+        {trabajosFiltrados.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📋</div>
+            <p><strong>No hay trabajos {filtroEstado !== 'todos' ? filtroEstado : ''}</strong></p>
+            <p>Presiona el botón + para agregar un nuevo trabajo</p>
           </div>
         ) : (
-          <div className="trabajos-list">
-            {trabajos.map((trabajo) => (
-              <div key={trabajo.id} className="trabajo-card card">
+          <div className="trabajos-grid">
+            {trabajosFiltrados.map((trabajo) => (
+              <div key={trabajo.id} className={`trabajo-card ${trabajo.estadoActual}`}>
                 <div className="trabajo-header">
-                  <div>
-                    <h3 className="trabajo-cliente">{trabajo.cliente.nombre}</h3>
-                    <p className="trabajo-descripcion">{trabajo.descripcion}</p>
+                  <div className="trabajo-info">
+                    <h3>{trabajo.cliente.nombre}</h3>
+                    <p className="trabajo-cliente">
+                      {trabajo.cliente.telefono && `📞 ${trabajo.cliente.telefono}`}
+                    </p>
                   </div>
-                  <span className={`badge ${getEstadoBadgeClass(trabajo.estadoActual)}`}>
-                    {getEstadoTexto(trabajo.estadoActual)}
-                  </span>
-                </div>
-
-                <div className="trabajo-info">
-                  {trabajo.precioEstimado && (
-                    <div className="info-item">
-                      <span className="info-label">Precio:</span>
-                      <span className="info-value">${trabajo.precioEstimado}</span>
-                    </div>
-                  )}
-                  {trabajo.cliente.telefono && (
-                    <div className="info-item">
-                      <span className="info-label">Teléfono:</span>
-                      <span className="info-value">{trabajo.cliente.telefono}</span>
-                    </div>
-                  )}
-                  <div className="info-item">
-                    <span className="info-label">Creado:</span>
-                    <span className="info-value">
-                      {new Date(trabajo.fechaCreacion).toLocaleString('es-ES')}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span className={`badge badge-animated ${getEstadoBadgeClass(trabajo.estadoActual)}`}>
+                      {trabajo.estadoActual === 'en_proceso' && <span className="pulse-dot"></span>}
+                      {getEstadoTexto(trabajo.estadoActual)}
                     </span>
+                    {trabajo.estadoActual !== 'completado' && (
+                      <button
+                        className="btn-icon-small"
+                        onClick={() => handleAbrirEditar(trabajo)}
+                        title="Editar trabajo"
+                      >
+                        ✏️
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Historial */}
-                {trabajo.historialEstados && trabajo.historialEstados.length > 0 && (
-                  <div className="historial-section">
-                    <h4>Historial:</h4>
-                    <div className="historial-list">
-                      {trabajo.historialEstados.map((hist) => (
-                        <div key={hist.id} className="historial-item">
-                          <span className={`badge ${getEstadoBadgeClass(hist.estado)}`}>
-                            {getEstadoTexto(hist.estado)}
-                          </span>
-                          <span className="historial-usuario">{hist.usuario.nombre}</span>
-                          <span className="historial-fecha">
-                            {new Date(hist.fechaHora).toLocaleString('es-ES')}
-                          </span>
-                          {hist.nota && (
-                            <div className="historial-nota">💬 {hist.nota}</div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <p className="trabajo-descripcion">{trabajo.descripcion}</p>
 
-                {/* Acciones */}
-                <div className="trabajo-acciones">
+                <div className="trabajo-meta">
+                  {trabajo.precioEstimado && (
+                    <span>💰 ${trabajo.precioEstimado}</span>
+                  )}
+                  <span>📅 {new Date(trabajo.fechaCreacion).toLocaleDateString('es-ES')}</span>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="trabajo-actions">
                   {trabajo.estadoActual === 'pendiente' && (
                     <button
-                      className="btn btn-small btn-primary"
-                      onClick={() => handleCambiarEstado(trabajo, 'en_proceso')}
+                      className="btn-action btn-outline-primary"
+                      onClick={() => handleCambiarEstado(trabajo.id, 'en_proceso')}
                     >
-                      Iniciar Trabajo
+                      🔧 Iniciar
                     </button>
                   )}
+                  
                   {trabajo.estadoActual === 'en_proceso' && (
-                    <>
-                      <button
-                        className="btn btn-small btn-success"
-                        onClick={() => handleCambiarEstado(trabajo, 'completado')}
-                      >
-                        ✓ Completar
-                      </button>
-                      <button
-                        className="btn btn-small btn-outline"
-                        onClick={() => handleCambiarEstado(trabajo, 'pendiente')}
-                      >
-                        ← Volver a Pendiente
-                      </button>
-                    </>
+                    <button
+                      className="btn-action btn-outline-success animate-pulse-subtle"
+                      onClick={() => handleCambiarEstado(trabajo.id, 'completado')}
+                    >
+                      ✓ Completar
+                    </button>
                   )}
+
                   {trabajo.estadoActual === 'completado' && (
-                    <span className="trabajo-finalizado">✓ Trabajo completado</span>
+                    <div className="trabajo-completado-text">
+                      <span className="checkmark-mini">✓</span> Completado
+                    </div>
                   )}
                 </div>
               </div>
@@ -242,41 +296,187 @@ const DashboardTrabajador = () => {
         )}
       </div>
 
-      {/* Modal para agregar nota */}
-      {mostrarModal && (
-        <div className="modal-overlay" onClick={() => setMostrarModal(false)}>
+      {/* Botón flotante agregar trabajo */}
+      <button
+        className="btn-agregar-trabajo"
+        onClick={() => setMostrarModalTrabajo(true)}
+        title="Agregar nuevo trabajo"
+      >
+        +
+      </button>
+
+      {/* Modal editar trabajo */}
+      {mostrarModalEditar && trabajoEditar && (
+        <div className="modal-overlay" onClick={() => setMostrarModalEditar(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Cambiar Estado</h3>
-            <p>
-              Cambiar a: <strong>{getEstadoTexto(trabajoSeleccionado.nuevoEstado)}</strong>
-            </p>
-            
-            <div className="form-group">
-              <label className="form-label">
-                Agregar nota o comentario (opcional):
-              </label>
-              <textarea
-                className="form-textarea"
-                value={nota}
-                onChange={(e) => setNota(e.target.value)}
-                placeholder="Ej: Cliente satisfecho, se entregó antes de tiempo..."
-                rows="3"
-              />
+            <div className="modal-header">
+              <h2>Editar Trabajo</h2>
+              <button className="btn-close" onClick={() => setMostrarModalEditar(false)}>
+                ×
+              </button>
             </div>
 
-            <div className="modal-actions">
-              <button
-                className="btn btn-outline"
-                onClick={() => setMostrarModal(false)}
-              >
-                Cancelar
+            <div className="modal-body">
+              <form onSubmit={handleGuardarEdicion}>
+                <div className="form-group">
+                  <label className="form-label">Descripción del trabajo *</label>
+                  <textarea
+                    className="form-textarea"
+                    value={trabajoEditar.descripcion}
+                    onChange={(e) => setTrabajoEditar({...trabajoEditar, descripcion: e.target.value})}
+                    required
+                    rows="3"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Precio estimado</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={trabajoEditar.precioEstimado}
+                    onChange={(e) => setTrabajoEditar({...trabajoEditar, precioEstimado: e.target.value})}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setMostrarModalEditar(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal agregar trabajo */}
+      {mostrarModalTrabajo && (
+        <div className="modal-overlay" onClick={() => setMostrarModalTrabajo(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Nuevo Trabajo</h2>
+              <button className="btn-close" onClick={() => setMostrarModalTrabajo(false)}>
+                ×
               </button>
-              <button
-                className="btn btn-primary"
-                onClick={confirmarCambioEstado}
-              >
-                Confirmar
-              </button>
+            </div>
+
+            <div className="modal-body">
+              <form onSubmit={handleCrearTrabajo}>
+                {/* Selector de cliente */}
+                <div className="form-group">
+                  <label className="form-label">Cliente *</label>
+                  <div className="cliente-selector">
+                    <select
+                      className="form-select"
+                      value={clienteSeleccionado}
+                      onChange={(e) => setClienteSeleccionado(e.target.value)}
+                      required
+                    >
+                      <option value="">Selecciona un cliente...</option>
+                      {clientes.map((cliente) => (
+                        <option key={cliente.id} value={cliente.id}>
+                          {cliente.nombre} {cliente.telefono && `- ${cliente.telefono}`}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-nuevo-cliente"
+                      onClick={() => setMostrarFormCliente(!mostrarFormCliente)}
+                    >
+                      {mostrarFormCliente ? '−' : '+'} Cliente
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form nuevo cliente */}
+                {mostrarFormCliente && (
+                  <>
+                    <div className="divider"><span>Nuevo Cliente</span></div>
+                    <div className="form-group">
+                      <label className="form-label">Nombre del cliente</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={nuevoCliente.nombre}
+                        onChange={(e) => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
+                        placeholder="Nombre completo"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Teléfono</label>
+                      <input
+                        type="tel"
+                        className="form-input"
+                        value={nuevoCliente.telefono}
+                        onChange={(e) => setNuevoCliente({...nuevoCliente, telefono: e.target.value})}
+                        placeholder="Ej: 555-1234"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-success"
+                      style={{ width: '100%', marginBottom: '1rem' }}
+                      onClick={handleCrearCliente}
+                      disabled={!nuevoCliente.nombre.trim()}
+                    >
+                      Guardar Cliente
+                    </button>
+                    <div className="divider"></div>
+                  </>
+                )}
+
+                {/* Descripción del trabajo */}
+                <div className="form-group">
+                  <label className="form-label">¿Qué trabajo llegó? *</label>
+                  <textarea
+                    className="form-textarea"
+                    value={descripcionTrabajo}
+                    onChange={(e) => setDescripcionTrabajo(e.target.value)}
+                    placeholder="Ej: Lavado completo, Impresión 50 copias..."
+                    required
+                    rows="3"
+                  />
+                </div>
+
+                {/* Precio estimado */}
+                <div className="form-group">
+                  <label className="form-label">Precio estimado (opcional)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={precioEstimado}
+                    onChange={(e) => setPrecioEstimado(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setMostrarModalTrabajo(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Registrar Trabajo
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
