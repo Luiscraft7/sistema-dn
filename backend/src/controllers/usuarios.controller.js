@@ -9,6 +9,13 @@ export const getUsuarios = async (req, res) => {
         nombre: true,
         username: true,
         rol: true,
+        negocioId: true,
+        negocio: {
+          select: {
+            id: true,
+            nombre: true
+          }
+        },
         activo: true,
         creadoEn: true
       },
@@ -25,7 +32,7 @@ export const getUsuarios = async (req, res) => {
 
 export const createUsuario = async (req, res) => {
   try {
-    const { nombre, username, password, rol } = req.body;
+    const { nombre, username, password, rol, negocioId } = req.body;
 
     // Validar campos requeridos
     if (!nombre || !username || !password || !rol) {
@@ -41,6 +48,13 @@ export const createUsuario = async (req, res) => {
       });
     }
 
+    // Si es trabajador, negocioId es obligatorio
+    if (rol === 'trabajador' && !negocioId) {
+      return res.status(400).json({ 
+        error: 'Los trabajadores deben tener un negocio asignado' 
+      });
+    }
+
     // Verificar que el username no exista
     const usuarioExiste = await prisma.usuario.findUnique({
       where: { username: username.trim() }
@@ -48,6 +62,17 @@ export const createUsuario = async (req, res) => {
 
     if (usuarioExiste) {
       return res.status(400).json({ error: 'El username ya está en uso' });
+    }
+
+    // Si se proporciona negocioId, verificar que existe
+    if (negocioId) {
+      const negocioExiste = await prisma.negocio.findUnique({
+        where: { id: parseInt(negocioId) }
+      });
+
+      if (!negocioExiste) {
+        return res.status(400).json({ error: 'El negocio no existe' });
+      }
     }
 
     // Hashear contraseña
@@ -60,6 +85,7 @@ export const createUsuario = async (req, res) => {
         username: username.trim(),
         passwordHash,
         rol,
+        negocioId: negocioId ? parseInt(negocioId) : null,
         activo: true
       },
       select: {
@@ -67,6 +93,13 @@ export const createUsuario = async (req, res) => {
         nombre: true,
         username: true,
         rol: true,
+        negocioId: true,
+        negocio: {
+          select: {
+            id: true,
+            nombre: true
+          }
+        },
         activo: true,
         creadoEn: true
       }
@@ -83,7 +116,7 @@ export const createUsuario = async (req, res) => {
 export const updateUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, username, password, rol, activo } = req.body;
+    const { nombre, username, password, rol, negocioId, activo } = req.body;
 
     // Verificar que el usuario existe
     const usuarioExiste = await prisma.usuario.findUnique({
@@ -117,7 +150,29 @@ export const updateUsuario = async (req, res) => {
       dataToUpdate.passwordHash = await bcrypt.hash(password, 10);
     }
     if (rol && (rol === 'dueño' || rol === 'trabajador')) {
+      // Si cambia a trabajador, debe tener negocioId
+      if (rol === 'trabajador' && !negocioId && !usuarioExiste.negocioId) {
+        return res.status(400).json({ 
+          error: 'Los trabajadores deben tener un negocio asignado' 
+        });
+      }
       dataToUpdate.rol = rol;
+    }
+    if (negocioId !== undefined) {
+      if (negocioId === null || negocioId === '') {
+        dataToUpdate.negocioId = null;
+      } else {
+        // Verificar que el negocio existe
+        const negocioExiste = await prisma.negocio.findUnique({
+          where: { id: parseInt(negocioId) }
+        });
+
+        if (!negocioExiste) {
+          return res.status(400).json({ error: 'El negocio no existe' });
+        }
+
+        dataToUpdate.negocioId = parseInt(negocioId);
+      }
     }
     if (typeof activo === 'boolean') {
       dataToUpdate.activo = activo;
@@ -132,6 +187,13 @@ export const updateUsuario = async (req, res) => {
         nombre: true,
         username: true,
         rol: true,
+        negocioId: true,
+        negocio: {
+          select: {
+            id: true,
+            nombre: true
+          }
+        },
         activo: true,
         creadoEn: true
       }

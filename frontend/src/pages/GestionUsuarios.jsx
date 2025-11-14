@@ -4,6 +4,7 @@ import './GestionUsuarios.css';
 
 const GestionUsuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
+  const [negocios, setNegocios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [usuarioEdit, setUsuarioEdit] = useState(null);
@@ -12,12 +13,28 @@ const GestionUsuarios = () => {
     username: '',
     password: '',
     rol: 'trabajador',
+    negocioId: '',
     activo: true
   });
 
   useEffect(() => {
-    loadUsuarios();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      const [usuariosData, negociosData] = await Promise.all([
+        usuariosApi.getAll(),
+        fetch('/api/negocios').then(res => res.json())
+      ]);
+      setUsuarios(usuariosData);
+      setNegocios(negociosData);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadUsuarios = async () => {
     try {
@@ -25,8 +42,6 @@ const GestionUsuarios = () => {
       setUsuarios(data);
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -45,6 +60,7 @@ const GestionUsuarios = () => {
       username: '',
       password: '',
       rol: 'trabajador',
+      negocioId: '',
       activo: true
     });
     setMostrarFormulario(true);
@@ -57,6 +73,7 @@ const GestionUsuarios = () => {
       username: usuario.username,
       password: '',
       rol: usuario.rol,
+      negocioId: usuario.negocioId || '',
       activo: usuario.activo
     });
     setMostrarFormulario(true);
@@ -186,6 +203,32 @@ const GestionUsuarios = () => {
               </div>
             </div>
 
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="negocioId">
+                  Negocio {formData.rol === 'trabajador' && '*'}
+                </label>
+                <select
+                  id="negocioId"
+                  name="negocioId"
+                  className="form-select"
+                  value={formData.negocioId}
+                  onChange={handleChange}
+                  required={formData.rol === 'trabajador'}
+                  disabled={formData.rol === 'dueño'}
+                >
+                  <option value="">
+                    {formData.rol === 'dueño' ? 'No aplica' : 'Seleccionar negocio'}
+                  </option>
+                  {negocios.map((negocio) => (
+                    <option key={negocio.id} value={negocio.id}>
+                      {negocio.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="form-group">
               <label className="form-checkbox">
                 <input
@@ -235,6 +278,12 @@ const GestionUsuarios = () => {
                   {usuario.rol}
                 </span>
               </div>
+              {usuario.negocio && (
+                <div className="info-item">
+                  <span className="info-label">Negocio:</span>
+                  <span className="info-value">{usuario.negocio.nombre}</span>
+                </div>
+              )}
               <div className="info-item">
                 <span className="info-label">Creado:</span>
                 <span className="info-value">

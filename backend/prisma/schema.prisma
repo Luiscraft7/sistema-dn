@@ -16,10 +16,12 @@ model Usuario {
   username      String   @unique
   passwordHash  String   @map("password_hash")
   rol           String   // "dueño" o "trabajador"
+  negocioId     Int?     @map("negocio_id") // NULL para dueños, obligatorio para trabajadores
   activo        Boolean  @default(true)
   creadoEn      DateTime @default(now()) @map("creado_en")
   
   // Relaciones
+  negocio          Negocio? @relation(fields: [negocioId], references: [id])
   historialEstados HistorialEstado[]
   
   @@map("usuarios")
@@ -30,7 +32,8 @@ model Negocio {
   nombre   String   @unique
   
   // Relaciones
-  trabajos Trabajo[]
+  trabajos   Trabajo[]
+  trabajadores Usuario[]
   
   @@map("negocios")
 }
@@ -70,6 +73,7 @@ model HistorialEstado {
   id        Int      @id @default(autoincrement())
   trabajoId Int      @map("trabajo_id")
   estado    String
+  nota      String?  // Nota o comentario del trabajador
   fechaHora DateTime @default(now()) @map("fecha_hora")
   usuarioId Int      @map("usuario_id")
   

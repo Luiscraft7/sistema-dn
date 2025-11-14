@@ -1,9 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const { user, logout, isDueno } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -20,7 +22,7 @@ const Navbar = () => {
 
         <div className="navbar-menu">
           <Link to="/dashboard" className="navbar-link">
-            Dashboard
+            {isDueno ? 'Dashboard' : 'Mi Trabajo'}
           </Link>
           <Link to="/clientes" className="navbar-link">
             Clientes
@@ -33,6 +35,13 @@ const Navbar = () => {
         </div>
 
         <div className="navbar-user">
+          <button 
+            onClick={toggleTheme} 
+            className="btn btn-small btn-outline"
+            title={theme === 'light' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro'}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
           <span className="navbar-username">{user?.nombre}</span>
           <button onClick={handleLogout} className="btn btn-small btn-outline">
             Salir

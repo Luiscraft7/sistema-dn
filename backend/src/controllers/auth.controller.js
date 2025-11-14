@@ -37,7 +37,8 @@ export const login = async (req, res) => {
       {
         id: usuario.id,
         username: usuario.username,
-        rol: usuario.rol
+        rol: usuario.rol,
+        negocioId: usuario.negocioId
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
@@ -50,7 +51,8 @@ export const login = async (req, res) => {
         id: usuario.id,
         nombre: usuario.nombre,
         username: usuario.username,
-        rol: usuario.rol
+        rol: usuario.rol,
+        negocioId: usuario.negocioId
       }
     });
 
@@ -70,6 +72,13 @@ export const getMe = async (req, res) => {
         nombre: true,
         username: true,
         rol: true,
+        negocioId: true,
+        negocio: {
+          select: {
+            id: true,
+            nombre: true
+          }
+        },
         activo: true,
         creadoEn: true
       }

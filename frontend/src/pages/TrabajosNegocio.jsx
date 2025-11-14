@@ -41,7 +41,7 @@ const TrabajosNegocio = () => {
 
   const handleCambiarEstado = async (trabajoId, nuevoEstado) => {
     try {
-      await trabajosApi.updateEstado(trabajoId, nuevoEstado);
+      await trabajosApi.updateEstado(trabajoId, { estado: nuevoEstado });
       loadData(); // Recargar datos
     } catch (error) {
       alert('Error al actualizar estado: ' + error.message);

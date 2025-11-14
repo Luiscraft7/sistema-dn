@@ -99,14 +99,15 @@ export const trabajosApi = {
     return handleResponse(response);
   },
 
-  updateEstado: async (id, estado) => {
+  updateEstado: async (id, data) => {
+    // data puede ser { estado, nota }
     const response = await fetch(`${API_URL}/trabajos/${id}/estado`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader()
       },
-      body: JSON.stringify({ estado })
+      body: JSON.stringify(data)
     });
     return handleResponse(response);
   }

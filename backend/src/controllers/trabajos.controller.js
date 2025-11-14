@@ -114,7 +114,7 @@ export const createTrabajo = async (req, res) => {
 export const updateEstadoTrabajo = async (req, res) => {
   try {
     const { id } = req.params;
-    const { estado } = req.body;
+    const { estado, nota } = req.body;
 
     // Validar estado
     const estadosValidos = ['pendiente', 'en_proceso', 'completado', 'cancelado'];
@@ -144,15 +144,28 @@ export const updateEstadoTrabajo = async (req, res) => {
       },
       include: {
         negocio: true,
-        cliente: true
+        cliente: true,
+        historialEstados: {
+          include: {
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                username: true
+              }
+            }
+          },
+          orderBy: { fechaHora: 'desc' }
+        }
       }
     });
 
-    // Crear registro en historial
+    // Crear registro en historial con nota opcional
     await prisma.historialEstado.create({
       data: {
         trabajoId: trabajo.id,
         estado: estado,
+        nota: nota ? nota.trim() : null,
         usuarioId: req.user.id
       }
     });
