@@ -47,6 +47,12 @@ const DashboardTrabajador = () => {
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [filtroFecha, setFiltroFecha] = useState('hoy');
+
+  // Copia editable de trabajos predeterminados por negocio
+  const [trabajosFrecuentes, setTrabajosFrecuentes] = useState(TRABAJOS_PREDETERMINADOS);
+
+  // Modo edición de trabajos frecuentes
+  const [editandoFrecuentes, setEditandoFrecuentes] = useState(false);
   
   // Estados del modal - con key basada en userId para forzar reset
   const [mostrarModalTrabajo, setMostrarModalTrabajo] = useState(false);
@@ -149,7 +155,7 @@ const DashboardTrabajador = () => {
     setMostrarFormCliente(false);
 
     // Determinar si hay trabajos predeterminados para este negocio
-    const predeterminados = TRABAJOS_PREDETERMINADOS[negocioNombre];
+  const predeterminados = trabajosFrecuentes[negocioNombre];
     const tienePredeterminados = Array.isArray(predeterminados) && predeterminados.length > 0;
 
     // Si no hay predeterminados, entrar directo a modo personalizado
@@ -610,21 +616,80 @@ const DashboardTrabajador = () => {
                 {!modoPersonalizado &&
                  !descripcionTrabajo &&
                  negocioNombre &&
-                 TRABAJOS_PREDETERMINADOS[negocioNombre] && (
+                 trabajosFrecuentes[negocioNombre] && (
                   <>
                     <div className="form-group">
                       <label className="form-label">Trabajos frecuentes:</label>
-                      <div className="trabajos-predeterminados">
-                        {TRABAJOS_PREDETERMINADOS[negocioNombre].map((trabajo, index) => (
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className="btn btn-small btn-outline"
+                          onClick={() => setEditandoFrecuentes(!editandoFrecuentes)}
+                        >
+                          {editandoFrecuentes ? 'Terminar edición' : '⚙️ Editar lista'}
+                        </button>
+                        {editandoFrecuentes && (
                           <button
-                            key={index}
                             type="button"
-                            className={`btn-predeterminado ${descripcionTrabajo === trabajo.nombre ? 'activo' : ''}`}
-                            onClick={() => handleSeleccionarPredeterminado(trabajo)}
+                            className="btn btn-small btn-outline"
+                            onClick={() => {
+                              setTrabajosFrecuentes(TRABAJOS_PREDETERMINADOS);
+                              setEditandoFrecuentes(false);
+                            }}
                           >
-                            <span className="trabajo-nombre">{trabajo.nombre}</span>
-                            <span className="trabajo-precio">₡{trabajo.precio.toLocaleString('es-CR')}</span>
+                            Restaurar
                           </button>
+                        )}
+                      </div>
+
+                      <div className="trabajos-predeterminados">
+                        {trabajosFrecuentes[negocioNombre].map((trabajo, index) => (
+                          editandoFrecuentes ? (
+                            <div key={index} className="trabajo-frecuente-edit-card">
+                              <input
+                                type="text"
+                                className="form-input"
+                                value={trabajo.nombre}
+                                onChange={(e) => {
+                                  const copia = { ...trabajosFrecuentes };
+                                  const lista = [...copia[negocioNombre]];
+                                  lista[index] = { ...lista[index], nombre: e.target.value };
+                                  copia[negocioNombre] = lista;
+                                  setTrabajosFrecuentes(copia);
+                                }}
+                                placeholder="Nombre del trabajo"
+                                style={{ marginBottom: '0.5rem' }}
+                              />
+                              <div className="input-with-prefix">
+                                <span className="input-prefix">₡</span>
+                                <input
+                                  type="number"
+                                  className="form-input with-prefix"
+                                  value={trabajo.precio}
+                                  onChange={(e) => {
+                                    const copia = { ...trabajosFrecuentes };
+                                    const lista = [...copia[negocioNombre]];
+                                    lista[index] = { ...lista[index], precio: Number(e.target.value || 0) };
+                                    copia[negocioNombre] = lista;
+                                    setTrabajosFrecuentes(copia);
+                                  }}
+                                  min="0"
+                                  step="50"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              key={index}
+                              type="button"
+                              className={`btn-predeterminado ${descripcionTrabajo === trabajo.nombre ? 'activo' : ''}`}
+                              onClick={() => handleSeleccionarPredeterminado(trabajo)}
+                            >
+                              <span className="trabajo-nombre">{trabajo.nombre}</span>
+                              <span className="trabajo-precio">₡{trabajo.precio.toLocaleString('es-CR')}</span>
+                            </button>
+                          )
                         ))}
                       </div>
                     </div>
