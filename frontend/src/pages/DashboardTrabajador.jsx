@@ -4,6 +4,34 @@ import { trabajosApi, clientesApi } from '../services/api';
 import usePolling from '../hooks/usePolling';
 import './DashboardTrabajador.css';
 
+// Trabajos predeterminados por negocio (precios en colones ₡)
+const TRABAJOS_PREDETERMINADOS = {
+  'Lavacar': [
+    { nombre: 'Lavado de carro completo', precio: 5000 },
+    { nombre: 'Lavado de moto', precio: 2500 },
+    { nombre: 'Lavado express', precio: 3000 },
+    { nombre: 'Lavado + encerado', precio: 8000 },
+    { nombre: 'Limpieza interior', precio: 4000 },
+    { nombre: 'Pulido de carrocería', precio: 10000 }
+  ],
+  'Impresión': [
+    { nombre: 'Impresión B/N (por página)', precio: 50 },
+    { nombre: 'Impresión color (por página)', precio: 200 },
+    { nombre: 'Copias simples', precio: 25 },
+    { nombre: 'Impresión de fotos', precio: 500 },
+    { nombre: 'Encuadernado', precio: 1500 },
+    { nombre: 'Laminado A4', precio: 300 }
+  ],
+  'Cabinas': [
+    { nombre: 'Hora de internet', precio: 500 },
+    { nombre: 'Media hora internet', precio: 300 },
+    { nombre: 'Impresión documento', precio: 100 },
+    { nombre: 'Escaneo', precio: 200 },
+    { nombre: 'Quemado de CD/DVD', precio: 1000 },
+    { nombre: 'Uso de cámara web', precio: 800 }
+  ]
+};
+
 const DashboardTrabajador = () => {
   const { user } = useAuth();
   const [trabajos, setTrabajos] = useState([]);
@@ -13,6 +41,8 @@ const DashboardTrabajador = () => {
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
   const [mostrarFormCliente, setMostrarFormCliente] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroFecha, setFiltroFecha] = useState('hoy');
+  const [modoPersonalizado, setModoPersonalizado] = useState(false);
   
   // Form nuevo trabajo
   const [clienteSeleccionado, setClienteSeleccionado] = useState('');
@@ -67,6 +97,12 @@ const DashboardTrabajador = () => {
     }
   };
 
+  const handleSeleccionarPredeterminado = (trabajo) => {
+    setDescripcionTrabajo(trabajo.nombre);
+    setPrecioEstimado(trabajo.precio.toString());
+    setModoPersonalizado(false);
+  };
+
   const handleCrearTrabajo = async (e) => {
     e.preventDefault();
     if (!clienteSeleccionado || !descripcionTrabajo.trim()) {
@@ -86,6 +122,7 @@ const DashboardTrabajador = () => {
       setClienteSeleccionado('');
       setDescripcionTrabajo('');
       setPrecioEstimado('');
+      setModoPersonalizado(false);
       setMostrarModalTrabajo(false);
       
       // Recargar trabajos
@@ -172,10 +209,43 @@ const DashboardTrabajador = () => {
     );
   }
 
-  // Filtrar trabajos
-  const trabajosFiltrados = filtroEstado === 'todos' 
-    ? trabajos 
-    : trabajos.filter(t => t.estadoActual === filtroEstado);
+  // Filtrar trabajos por fecha
+  const filtrarPorFecha = (trabajos) => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    const mañana = new Date(hoy);
+    mañana.setDate(mañana.getDate() + 1);
+    
+    return trabajos.filter(trabajo => {
+      const fechaTrabajo = new Date(trabajo.fechaCreacion);
+      fechaTrabajo.setHours(0, 0, 0, 0);
+      
+      if (filtroFecha === 'hoy') {
+        return fechaTrabajo.getTime() === hoy.getTime();
+      } else if (filtroFecha === 'semana') {
+        const hace7Dias = new Date(hoy);
+        hace7Dias.setDate(hace7Dias.getDate() - 7);
+        return fechaTrabajo >= hace7Dias;
+      } else if (filtroFecha === 'mes') {
+        const hace30Dias = new Date(hoy);
+        hace30Dias.setDate(hace30Dias.getDate() - 30);
+        return fechaTrabajo >= hace30Dias;
+      }
+      return true; // 'todos'
+    });
+  };
+
+  // Filtrar trabajos por estado y fecha
+  let trabajosFiltrados = trabajos;
+  
+  // Aplicar filtro de fecha
+  trabajosFiltrados = filtrarPorFecha(trabajosFiltrados);
+  
+  // Aplicar filtro de estado
+  if (filtroEstado !== 'todos') {
+    trabajosFiltrados = trabajosFiltrados.filter(t => t.estadoActual === filtroEstado);
+  }
 
   const trabajosActivos = trabajos.filter(t => 
     t.estadoActual === 'pendiente' || t.estadoActual === 'en_proceso'
@@ -191,31 +261,66 @@ const DashboardTrabajador = () => {
 
       {/* Filtros */}
       <div className="container">
-        <div className="estado-filters">
-          <button
-            className={`filter-btn ${filtroEstado === 'todos' ? 'active' : ''}`}
-            onClick={() => setFiltroEstado('todos')}
-          >
-            Todos ({trabajos.length})
-          </button>
-          <button
-            className={`filter-btn ${filtroEstado === 'pendiente' ? 'active' : ''}`}
-            onClick={() => setFiltroEstado('pendiente')}
-          >
-            ⏳ Pendientes ({trabajos.filter(t => t.estadoActual === 'pendiente').length})
-          </button>
-          <button
-            className={`filter-btn ${filtroEstado === 'en_proceso' ? 'active' : ''}`}
-            onClick={() => setFiltroEstado('en_proceso')}
-          >
-            🔧 Trabajando ({trabajos.filter(t => t.estadoActual === 'en_proceso').length})
-          </button>
-          <button
-            className={`filter-btn ${filtroEstado === 'completado' ? 'active' : ''}`}
-            onClick={() => setFiltroEstado('completado')}
-          >
-            ✅ Completados ({trabajos.filter(t => t.estadoActual === 'completado').length})
-          </button>
+        <div className="filtros-section">
+          <div className="filtro-grupo">
+            <label className="filtro-label">Estado:</label>
+            <div className="estado-filters">
+              <button
+                className={`filter-btn ${filtroEstado === 'todos' ? 'active' : ''}`}
+                onClick={() => setFiltroEstado('todos')}
+              >
+                Todos
+              </button>
+              <button
+                className={`filter-btn ${filtroEstado === 'pendiente' ? 'active' : ''}`}
+                onClick={() => setFiltroEstado('pendiente')}
+              >
+                ⏳ Pendientes
+              </button>
+              <button
+                className={`filter-btn ${filtroEstado === 'en_proceso' ? 'active' : ''}`}
+                onClick={() => setFiltroEstado('en_proceso')}
+              >
+                🔧 Trabajando
+              </button>
+              <button
+                className={`filter-btn ${filtroEstado === 'completado' ? 'active' : ''}`}
+                onClick={() => setFiltroEstado('completado')}
+              >
+                ✅ Completados
+              </button>
+            </div>
+          </div>
+
+          <div className="filtro-grupo">
+            <label className="filtro-label">Fecha:</label>
+            <div className="estado-filters">
+              <button
+                className={`filter-btn ${filtroFecha === 'hoy' ? 'active' : ''}`}
+                onClick={() => setFiltroFecha('hoy')}
+              >
+                📅 Hoy
+              </button>
+              <button
+                className={`filter-btn ${filtroFecha === 'semana' ? 'active' : ''}`}
+                onClick={() => setFiltroFecha('semana')}
+              >
+                📆 Esta semana
+              </button>
+              <button
+                className={`filter-btn ${filtroFecha === 'mes' ? 'active' : ''}`}
+                onClick={() => setFiltroFecha('mes')}
+              >
+                📊 Este mes
+              </button>
+              <button
+                className={`filter-btn ${filtroFecha === 'todos' ? 'active' : ''}`}
+                onClick={() => setFiltroFecha('todos')}
+              >
+                🗂️ Historial
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -259,9 +364,10 @@ const DashboardTrabajador = () => {
 
                 <div className="trabajo-meta">
                   {trabajo.precioEstimado && (
-                    <span>💰 ${trabajo.precioEstimado}</span>
+                    <span>💰 ₡{trabajo.precioEstimado.toLocaleString('es-CR')}</span>
                   )}
-                  <span>📅 {new Date(trabajo.fechaCreacion).toLocaleDateString('es-ES')}</span>
+                  <span>📅 {new Date(trabajo.fechaCreacion).toLocaleDateString('es-CR')}</span>
+                  <span>🕐 {new Date(trabajo.fechaCreacion).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
 
                 {/* Botones de acción */}
@@ -330,16 +436,19 @@ const DashboardTrabajador = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Precio estimado</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={trabajoEditar.precioEstimado}
-                    onChange={(e) => setTrabajoEditar({...trabajoEditar, precioEstimado: e.target.value})}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                  />
+                  <label className="form-label">Precio (₡ Colones)</label>
+                  <div className="input-with-prefix">
+                    <span className="input-prefix">₡</span>
+                    <input
+                      type="number"
+                      className="form-input with-prefix"
+                      value={trabajoEditar.precioEstimado}
+                      onChange={(e) => setTrabajoEditar({...trabajoEditar, precioEstimado: e.target.value})}
+                      placeholder="0"
+                      step="50"
+                      min="0"
+                    />
+                  </div>
                 </div>
 
                 <div className="modal-footer">
@@ -437,45 +546,105 @@ const DashboardTrabajador = () => {
                   </>
                 )}
 
-                {/* Descripción del trabajo */}
-                <div className="form-group">
-                  <label className="form-label">¿Qué trabajo llegó? *</label>
-                  <textarea
-                    className="form-textarea"
-                    value={descripcionTrabajo}
-                    onChange={(e) => setDescripcionTrabajo(e.target.value)}
-                    placeholder="Ej: Lavado completo, Impresión 50 copias..."
-                    required
-                    rows="3"
-                  />
-                </div>
+                {/* Opciones predeterminadas */}
+                {!modoPersonalizado && user.negocio?.nombre && TRABAJOS_PREDETERMINADOS[user.negocio.nombre] && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Trabajos frecuentes:</label>
+                      <div className="trabajos-predeterminados">
+                        {TRABAJOS_PREDETERMINADOS[user.negocio.nombre].map((trabajo, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className={`btn-predeterminado ${descripcionTrabajo === trabajo.nombre ? 'activo' : ''}`}
+                            onClick={() => handleSeleccionarPredeterminado(trabajo)}
+                          >
+                            <span className="trabajo-nombre">{trabajo.nombre}</span>
+                            <span className="trabajo-precio">₡{trabajo.precio.toLocaleString('es-CR')}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                {/* Precio estimado */}
-                <div className="form-group">
-                  <label className="form-label">Precio estimado (opcional)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={precioEstimado}
-                    onChange={(e) => setPrecioEstimado(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                  />
-                </div>
+                    <button
+                      type="button"
+                      className="btn-personalizado"
+                      onClick={() => setModoPersonalizado(true)}
+                    >
+                      ✏️ Escribir trabajo personalizado
+                    </button>
 
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() => setMostrarModalTrabajo(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Registrar Trabajo
-                  </button>
-                </div>
+                    <div className="divider"></div>
+                  </>
+                )}
+
+                {/* Descripción del trabajo (modo personalizado o con valor) */}
+                {(modoPersonalizado || descripcionTrabajo) && (
+                  <>
+                    {modoPersonalizado && (
+                      <button
+                        type="button"
+                        className="btn-volver"
+                        onClick={() => {
+                          setModoPersonalizado(false);
+                          setDescripcionTrabajo('');
+                          setPrecioEstimado('');
+                        }}
+                      >
+                        ← Volver a opciones rápidas
+                      </button>
+                    )}
+                    
+                    <div className="form-group">
+                      <label className="form-label">Descripción del trabajo *</label>
+                      <textarea
+                        className="form-textarea"
+                        value={descripcionTrabajo}
+                        onChange={(e) => setDescripcionTrabajo(e.target.value)}
+                        placeholder="Describe el trabajo..."
+                        required
+                        rows="3"
+                      />
+                    </div>
+
+                    {/* Precio estimado */}
+                    <div className="form-group">
+                      <label className="form-label">Precio (₡ Colones)</label>
+                      <div className="input-with-prefix">
+                        <span className="input-prefix">₡</span>
+                        <input
+                          type="number"
+                          className="form-input with-prefix"
+                          value={precioEstimado}
+                          onChange={(e) => setPrecioEstimado(e.target.value)}
+                          placeholder="0"
+                          step="50"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {descripcionTrabajo && (
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => {
+                        setMostrarModalTrabajo(false);
+                        setDescripcionTrabajo('');
+                        setPrecioEstimado('');
+                        setModoPersonalizado(false);
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      Registrar Trabajo
+                    </button>
+                  </div>
+                )}
               </form>
             </div>
           </div>

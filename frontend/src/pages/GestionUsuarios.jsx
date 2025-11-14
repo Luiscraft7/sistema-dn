@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { usuariosApi } from '../services/api';
+import { usuariosApi, negociosApi } from '../services/api';
 import './GestionUsuarios.css';
 
 const GestionUsuarios = () => {
@@ -25,7 +25,7 @@ const GestionUsuarios = () => {
     try {
       const [usuariosData, negociosData] = await Promise.all([
         usuariosApi.getAll(),
-        fetch('/api/negocios').then(res => res.json())
+        negociosApi.getAll()
       ]);
       setUsuarios(usuariosData);
       setNegocios(negociosData);
@@ -47,10 +47,19 @@ const GestionUsuarios = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      
+      // Si cambia el rol a dueño, limpiar negocioId
+      if (name === 'rol' && value === 'dueño') {
+        newData.negocioId = '';
+      }
+      
+      return newData;
+    });
   };
 
   const handleNuevo = () => {
@@ -83,17 +92,30 @@ const GestionUsuarios = () => {
     e.preventDefault();
     
     try {
+      const dataToSubmit = { ...formData };
+      
+      // Si es dueño, negocioId debe ser null
+      if (dataToSubmit.rol === 'dueño') {
+        dataToSubmit.negocioId = null;
+      } else if (dataToSubmit.negocioId === '') {
+        // Si es trabajador y no hay negocioId, es un error
+        alert('Los trabajadores deben tener un negocio asignado');
+        return;
+      } else {
+        // Convertir negocioId a número
+        dataToSubmit.negocioId = parseInt(dataToSubmit.negocioId);
+      }
+      
       if (usuarioEdit) {
         // Actualizar
-        const dataToUpdate = { ...formData };
-        if (!dataToUpdate.password) {
-          delete dataToUpdate.password; // No actualizar password si está vacío
+        if (!dataToSubmit.password) {
+          delete dataToSubmit.password; // No actualizar password si está vacío
         }
-        await usuariosApi.update(usuarioEdit.id, dataToUpdate);
+        await usuariosApi.update(usuarioEdit.id, dataToSubmit);
         alert('Usuario actualizado exitosamente');
       } else {
         // Crear
-        await usuariosApi.create(formData);
+        await usuariosApi.create(dataToSubmit);
         alert('Usuario creado exitosamente');
       }
       
@@ -101,6 +123,7 @@ const GestionUsuarios = () => {
       setUsuarioEdit(null);
       loadUsuarios();
     } catch (error) {
+      console.error('Error completo:', error);
       alert('Error: ' + error.message);
     }
   };
@@ -212,7 +235,7 @@ const GestionUsuarios = () => {
                   id="negocioId"
                   name="negocioId"
                   className="form-select"
-                  value={formData.negocioId}
+                  value={formData.negocioId || ''}
                   onChange={handleChange}
                   required={formData.rol === 'trabajador'}
                   disabled={formData.rol === 'dueño'}
