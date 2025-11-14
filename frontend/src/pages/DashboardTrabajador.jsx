@@ -34,14 +34,24 @@ const TRABAJOS_PREDETERMINADOS = {
 
 const DashboardTrabajador = () => {
   const { user } = useAuth();
+
+  // Nombre de negocio "seguro" usando negocioId como respaldo
+  const negocioNombre =
+    user?.negocio?.nombre ||
+    (user?.negocioId === 1 ? 'Lavacar'
+      : user?.negocioId === 2 ? 'Impresión'
+      : user?.negocioId === 3 ? 'Cabinas'
+      : null);
   const [trabajos, setTrabajos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroFecha, setFiltroFecha] = useState('hoy');
+  
+  // Estados del modal - con key basada en userId para forzar reset
   const [mostrarModalTrabajo, setMostrarModalTrabajo] = useState(false);
   const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
   const [mostrarFormCliente, setMostrarFormCliente] = useState(false);
-  const [filtroEstado, setFiltroEstado] = useState('todos');
-  const [filtroFecha, setFiltroFecha] = useState('hoy');
   const [modoPersonalizado, setModoPersonalizado] = useState(false);
   
   // Form nuevo trabajo
@@ -75,9 +85,31 @@ const DashboardTrabajador = () => {
     }
   };
 
+  // Resetear todo cuando cambia el usuario
   useEffect(() => {
-    loadData();
-  }, [user]);
+    if (user?.id) {
+      // Cerrar todos los modales
+      setMostrarModalTrabajo(false);
+      setMostrarModalEditar(false);
+      setMostrarFormCliente(false);
+      
+      // Limpiar todos los formularios
+      setClienteSeleccionado('');
+      setDescripcionTrabajo('');
+      setPrecioEstimado('');
+      setModoPersonalizado(false);
+      setTrabajoEditar(null);
+      setNuevoCliente({ nombre: '', telefono: '' });
+      
+      // Resetear filtros
+      setFiltroEstado('todos');
+      setFiltroFecha('hoy');
+      
+      // Cargar datos del nuevo usuario
+      setLoading(true);
+      loadData();
+    }
+  }, [user?.id]);
 
   // Polling cada 10 segundos
   usePolling(() => {
@@ -103,6 +135,38 @@ const DashboardTrabajador = () => {
     setModoPersonalizado(false);
   };
 
+  const handleAbrirModalTrabajo = () => {
+    // No abrir hasta tener claro el negocio del usuario
+    if (!negocioNombre) {
+      alert('Espera un momento mientras se carga tu negocio y vuelve a intentarlo.');
+      return;
+    }
+
+    // Resetear estados antes de abrir el modal
+    setClienteSeleccionado('');
+    setDescripcionTrabajo('');
+    setPrecioEstimado('');
+    setMostrarFormCliente(false);
+
+    // Determinar si hay trabajos predeterminados para este negocio
+    const predeterminados = TRABAJOS_PREDETERMINADOS[negocioNombre];
+    const tienePredeterminados = Array.isArray(predeterminados) && predeterminados.length > 0;
+
+    // Si no hay predeterminados, entrar directo a modo personalizado
+    setModoPersonalizado(!tienePredeterminados);
+
+    setMostrarModalTrabajo(true);
+  };
+
+  const handleCerrarModalTrabajo = () => {
+    setMostrarModalTrabajo(false);
+    setClienteSeleccionado('');
+    setDescripcionTrabajo('');
+    setPrecioEstimado('');
+    setModoPersonalizado(false);
+    setMostrarFormCliente(false);
+  };
+
   const handleCrearTrabajo = async (e) => {
     e.preventDefault();
     if (!clienteSeleccionado || !descripcionTrabajo.trim()) {
@@ -118,12 +182,8 @@ const DashboardTrabajador = () => {
         precioEstimado: precioEstimado ? parseFloat(precioEstimado) : null
       });
       
-      // Resetear form
-      setClienteSeleccionado('');
-      setDescripcionTrabajo('');
-      setPrecioEstimado('');
-      setModoPersonalizado(false);
-      setMostrarModalTrabajo(false);
+      // Cerrar modal y resetear
+      handleCerrarModalTrabajo();
       
       // Recargar trabajos
       loadData();
@@ -256,7 +316,7 @@ const DashboardTrabajador = () => {
       {/* Header */}
       <div className="container">
         <h1>👋 Hola, {user.nombre}</h1>
-        <span className="negocio-badge">{user.negocio?.nombre}</span>
+        <span className="negocio-badge">{negocioNombre || 'Sin negocio'}</span>
       </div>
 
       {/* Filtros */}
@@ -405,7 +465,7 @@ const DashboardTrabajador = () => {
       {/* Botón flotante agregar trabajo */}
       <button
         className="btn-agregar-trabajo"
-        onClick={() => setMostrarModalTrabajo(true)}
+        onClick={handleAbrirModalTrabajo}
         title="Agregar nuevo trabajo"
       >
         +
@@ -471,11 +531,11 @@ const DashboardTrabajador = () => {
 
       {/* Modal agregar trabajo */}
       {mostrarModalTrabajo && (
-        <div className="modal-overlay" onClick={() => setMostrarModalTrabajo(false)}>
+        <div className="modal-overlay" onClick={handleCerrarModalTrabajo} key={`modal-${user?.id}`}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Nuevo Trabajo</h2>
-              <button className="btn-close" onClick={() => setMostrarModalTrabajo(false)}>
+              <button className="btn-close" onClick={handleCerrarModalTrabajo}>
                 ×
               </button>
             </div>
@@ -547,12 +607,15 @@ const DashboardTrabajador = () => {
                 )}
 
                 {/* Opciones predeterminadas */}
-                {!modoPersonalizado && user.negocio?.nombre && TRABAJOS_PREDETERMINADOS[user.negocio.nombre] && (
+                {!modoPersonalizado &&
+                 !descripcionTrabajo &&
+                 negocioNombre &&
+                 TRABAJOS_PREDETERMINADOS[negocioNombre] && (
                   <>
                     <div className="form-group">
                       <label className="form-label">Trabajos frecuentes:</label>
                       <div className="trabajos-predeterminados">
-                        {TRABAJOS_PREDETERMINADOS[user.negocio.nombre].map((trabajo, index) => (
+                        {TRABAJOS_PREDETERMINADOS[negocioNombre].map((trabajo, index) => (
                           <button
                             key={index}
                             type="button"
@@ -631,12 +694,7 @@ const DashboardTrabajador = () => {
                     <button
                       type="button"
                       className="btn btn-outline"
-                      onClick={() => {
-                        setMostrarModalTrabajo(false);
-                        setDescripcionTrabajo('');
-                        setPrecioEstimado('');
-                        setModoPersonalizado(false);
-                      }}
+                      onClick={handleCerrarModalTrabajo}
                     >
                       Cancelar
                     </button>

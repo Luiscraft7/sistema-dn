@@ -24,13 +24,15 @@ const Navbar = () => {
           <Link to="/dashboard" className="navbar-link">
             {isDueno ? 'Dashboard' : 'Mi Trabajo'}
           </Link>
-          <Link to="/clientes" className="navbar-link">
-            Clientes
-          </Link>
           {isDueno && (
-            <Link to="/usuarios" className="navbar-link">
-              Usuarios
-            </Link>
+            <>
+              <Link to="/clientes" className="navbar-link">
+                Clientes
+              </Link>
+              <Link to="/usuarios" className="navbar-link">
+                Usuarios
+              </Link>
+            </>
           )}
         </div>
 
