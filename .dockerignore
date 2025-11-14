@@ -1,0 +1,22 @@
+# Backend
+backend/node_modules
+backend/dev.db
+backend/dev.db-journal
+backend/.env
+backend/dist
+backend/build
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/build
+frontend/.env
+
+# General
+.git
+.gitignore
+*.md
+.vscode
+.idea
+*.log
+.DS_Store

@@ -1,0 +1,86 @@
+.clientes {
+  padding-bottom: 2rem;
+}
+
+.form-card {
+  margin-bottom: 1.5rem;
+}
+
+.form-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.search-card {
+  margin-bottom: 1.5rem;
+}
+
+.clientes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.cliente-card {
+  transition: box-shadow 0.2s;
+}
+
+.cliente-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.cliente-nombre {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.cliente-telefono {
+  display: inline-block;
+  font-size: 0.9375rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  margin-bottom: 0.75rem;
+  transition: color 0.2s;
+}
+
+.cliente-telefono:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.cliente-nota {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.cliente-meta {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.cliente-trabajos {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .clientes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-meta {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
