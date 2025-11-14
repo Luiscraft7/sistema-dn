@@ -126,7 +126,7 @@
 
 .trabajo-card.en_proceso {
   border-left-color: var(--primary-color);
-  animation: borderPulse 2s ease-in-out infinite;
+  animation: borderPulse 2.4s ease-in-out infinite;
 }
 
 @keyframes borderPulse {

@@ -70,6 +70,16 @@ const DashboardDueno = () => {
     return textos[estado] || estado;
   };
 
+  const getProgressPercentage = (estado) => {
+    const percentages = {
+      pendiente: 33,
+      en_proceso: 66,
+      completado: 100,
+      cancelado: 0
+    };
+    return percentages[estado] || 0;
+  };
+
   if (loading) {
     return (
       <div className="container">
@@ -151,6 +161,18 @@ const DashboardDueno = () => {
                         hour: '2-digit', 
                         minute: '2-digit' 
                       })}
+                    </div>
+                    
+                    {/* Barra de progreso */}
+                    <div className="trabajo-progress-container">
+                      <div className="trabajo-progress-bar">
+                        <div 
+                          className={`trabajo-progress-fill ${trabajo.estadoActual}`}
+                          style={{ width: `${getProgressPercentage(trabajo.estadoActual)}%` }}
+                        >
+                          <span className="progress-label">{getProgressPercentage(trabajo.estadoActual)}%</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="trabajo-meta">

@@ -2,11 +2,26 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 55%),
+              radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.06), transparent 55%),
+              var(--bg-body);
 }
 
 .layout-main {
   flex: 1;
   padding: 1.5rem 0;
+  animation: pageFadeIn 0.3s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 768px) {
