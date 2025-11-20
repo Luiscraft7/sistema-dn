@@ -8,6 +8,42 @@
   margin-bottom: 2rem;
 }
 
+/* Tabs */
+.tabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  color: var(--text-gray);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--text-light);
+  border-color: var(--admin-primary);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+  color: #fff;
+  border-color: var(--admin-primary);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.section-actions { display:flex; gap:0.5rem; flex-wrap:wrap; }
+
 .admin-header h1 {
   margin: 0 0 1.5rem 0;
   color: var(--text-light);
@@ -274,8 +310,49 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .container {
+    padding: 0.5rem;
+  }
+
+  .navbar-content {
+    padding: 0 1rem;
+  }
+
+  .navbar-brand {
+    font-size: 1rem;
+  }
+
+  .navbar-username {
+    display: none;
+  }
+
   .stats-grid-admin {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .stat-card-admin {
+    padding: 1rem;
+  }
+
+  .stat-icon {
+    font-size: 2rem;
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+  }
+
+  .tabs-nav {
+    overflow-x: auto;
+    gap: 0.25rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .tab-btn {
+    white-space: nowrap;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
   }
 
   .negocios-grid {
@@ -288,35 +365,72 @@
 
   .section-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+    align-items: stretch;
+    gap: 0.75rem;
   }
 
-  .section-header .btn {
+  .section-actions {
+    flex-direction: column;
     width: 100%;
   }
 
+  .section-actions .form-input,
+  .section-actions .btn {
+    width: 100%;
+    max-width: 100% !important;
+  }
+
   .table-container {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    overflow-x: auto;
+  }
+
+  .data-table {
+    min-width: 600px;
   }
 
   .data-table th,
   .data-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
   }
 
   .action-buttons {
     flex-direction: column;
+    gap: 0.25rem;
   }
 
   .action-buttons .btn {
     width: 100%;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .user-info .user-name {
+    font-size: 0.85rem;
+  }
+
+  .user-info .user-username {
+    font-size: 0.75rem;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
   }
 }
 
 @media (max-width: 480px) {
   .admin-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+  }
+
+  .stats-grid-admin {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card-admin {
+    padding: 0.75rem;
   }
 
   .negocio-stats {
@@ -325,5 +439,27 @@
 
   .resumen-stats {
     flex-direction: column;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .form-group {
+    margin-bottom: 0.75rem;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+
+  .form-input {
+    font-size: 0.9rem;
+    padding: 0.5rem;
   }
 }

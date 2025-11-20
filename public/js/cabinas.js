@@ -22,7 +22,7 @@ const cabinasApp = {
 
     // Actualizar navbar
     document.getElementById('navbarUser').textContent = userData.nombreCompleto || userData.usuario;
-    document.getElementById('navbarRole').textContent = userData.rol === 'dueno' ? 'Dueño' : 'Trabajador';
+    document.getElementById('navbarRole').textContent = (userData.rol === 'dueno' || userData.rol === 'dueño') ? 'Dueño' : 'Trabajador';
 
     // Buscar el negocio Cabinas
     await this.loadNegocios();
@@ -72,7 +72,8 @@ const cabinasApp = {
   async loadClientes() {
     try {
       const allClientes = await API.clientes.getAll();
-      this.clientes = allClientes.filter(c => c.negocioId === this.negocioId);
+      // Cabinas solo muestra clientes con esCabina = true
+      this.clientes = allClientes.filter(c => c.esCabina === true);
       this.renderClientesSelect();
     } catch (error) {
       console.error('Error cargando clientes:', error);
@@ -110,22 +111,15 @@ const cabinasApp = {
     enProceso.innerHTML = '';
     completados.innerHTML = '';
 
-    // Filtrar trabajos del día para completados
-    const hoy = new Date().toISOString().split('T')[0];
-    const trabajosHoy = this.trabajos.filter(t => {
-      if (t.estado !== 'completado') return false;
-      const fecha = t.fechaCompletado?.split('T')[0];
-      return fecha === hoy;
-    });
-
+    // Mostrar todas las sesiones completadas
     this.trabajos.forEach(trabajo => {
       const card = this.createTrabajoCard(trabajo);
-      
+
       if (trabajo.estado === 'pendiente') {
         pendientes.appendChild(card);
       } else if (trabajo.estado === 'en_proceso') {
         enProceso.appendChild(card);
-      } else if (trabajo.estado === 'completado' && trabajosHoy.includes(trabajo)) {
+      } else if (trabajo.estado === 'completado') {
         completados.appendChild(card);
       }
     });
@@ -138,7 +132,7 @@ const cabinasApp = {
       enProceso.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay sesiones activas</p>';
     }
     if (completados.children.length === 0) {
-      completados.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay sesiones completadas hoy</p>';
+      completados.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay sesiones completadas</p>';
     }
   },
 
@@ -268,7 +262,7 @@ const cabinasApp = {
 
   async cambiarEstado(trabajoId, nuevoEstado) {
     try {
-      await API.trabajos.update(trabajoId, { estado: nuevoEstado });
+      await API.trabajos.updateEstado(trabajoId, { estado: nuevoEstado });
       await this.loadTrabajos();
       this.updateStats();
     } catch (error) {
@@ -312,12 +306,12 @@ const cabinasApp = {
       e.preventDefault();
       
       const data = {
-        negocioId: this.negocioId,
         nombre: document.getElementById('clienteNombre').value,
         telefono: document.getElementById('clienteTelefono').value || null,
         cedula: document.getElementById('clienteCedula').value || null,
         edad: parseInt(document.getElementById('clienteEdad').value) || null,
-        notaExtra: document.getElementById('clienteNota').value || null
+        notaExtra: document.getElementById('clienteNota').value || null,
+        esCabina: true
       };
 
       try {

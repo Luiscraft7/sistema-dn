@@ -5,6 +5,15 @@ const adminApp = {
   trabajos: [],
   clientes: [],
   pollingInterval: null,
+  currentTab: 'trabajos',
+  filtrosUsuarios: {
+    negocioId: '',
+    buscar: ''
+  },
+  filtrosClientes: {
+    tipo: '',
+    buscar: ''
+  },
 
   async init() {
     // Verificar token
@@ -21,7 +30,7 @@ const adminApp = {
     }
 
     // Verificar que sea dueño
-    if (userData.rol !== 'dueno') {
+    if (!(userData.rol === 'dueno' || userData.rol === 'dueño')) {
       alert('No tienes permisos de administrador');
       
       // Redirigir al trabajador a su negocio correspondiente
@@ -72,6 +81,7 @@ const adminApp = {
     this.renderNegocios();
     this.renderUsuarios();
     this.renderTrabajosResumen();
+    this.renderClientes();
   },
 
   async loadNegocios() {
@@ -149,12 +159,17 @@ const adminApp = {
       const enProceso = trabajosNegocio.filter(t => t.estado === 'en_proceso').length;
       const completados = trabajosNegocio.filter(t => t.estado === 'completado').length;
 
+      // Trabajadores asignados a negocio
+      const trabajadores = this.usuarios.filter(u => u.rol === 'trabajador' && u.negocioId === negocio.id && u.activo);
+      const trabajadorResumen = trabajadores.length
+        ? trabajadores.map(t => `<span class="badge badge-trabajador" style="margin:2px">@${t.username}</span>`).join('')
+        : '<span style="color:var(--text-gray);font-size:0.75rem">Sin trabajadores</span>';
+
       const url = negocio.nombre === 'Cabinas' ? '/cabinas.html' : 
                   negocio.nombre === 'Impresión' ? '/impresion.html' : 
                   '/lavacar.html';
 
-      const card = document.createElement('a');
-      card.href = url;
+      const card = document.createElement('div');
       card.className = 'negocio-card';
       card.innerHTML = `
         <div class="negocio-header">
@@ -177,6 +192,13 @@ const adminApp = {
             <div class="negocio-stat-label">Completados</div>
           </div>
         </div>
+        <div style="margin-top:1rem">
+          <div style="font-size:0.75rem; color:var(--text-gray); margin-bottom:0.25rem">Trabajadores:</div>
+          <div>${trabajadorResumen}</div>
+        </div>
+        <div style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" data-negocio="${negocio.id}" data-nombre="${negocio.nombre}" onclick="adminApp.nuevoTrabajador(${negocio.id})">Asignar Trabajador</button>
+        </div>
       `;
       container.appendChild(card);
     });
@@ -185,8 +207,17 @@ const adminApp = {
   renderUsuarios() {
     const tbody = document.getElementById('usuariosTable');
     tbody.innerHTML = '';
+    // Aplicar filtros
+    const filtrados = this.usuarios.filter(u => {
+      if (this.filtrosUsuarios.negocioId && parseInt(this.filtrosUsuarios.negocioId) !== u.negocioId) return false;
+      if (this.filtrosUsuarios.buscar) {
+        const term = this.filtrosUsuarios.buscar.toLowerCase();
+        if (!((u.username || '').toLowerCase().includes(term) || (u.nombre || '').toLowerCase().includes(term))) return false;
+      }
+      return true;
+    });
 
-    this.usuarios.forEach(usuario => {
+    filtrados.forEach(usuario => {
       const negocio = usuario.negocioId ? 
         this.negocios.find(n => n.id === usuario.negocioId) : null;
 
@@ -194,14 +225,14 @@ const adminApp = {
       tr.innerHTML = `
         <td>
           <div class="user-info">
-            <span class="user-name">${usuario.nombreCompleto || 'Sin nombre'}</span>
-            <span class="user-username">@${usuario.usuario}</span>
+            <span class="user-name">${usuario.nombre || 'Sin nombre'}</span>
+            <span class="user-username">@${usuario.username}</span>
           </div>
         </td>
-        <td>${usuario.nombreCompleto || '-'}</td>
+        <td>${usuario.nombre || '-'}</td>
         <td>
-          <span class="badge ${usuario.rol === 'dueno' ? 'badge-dueno' : 'badge-trabajador'}">
-            ${usuario.rol === 'dueno' ? 'Dueño' : 'Trabajador'}
+          <span class="badge ${(usuario.rol === 'dueno' || usuario.rol === 'dueño') ? 'badge-dueno' : 'badge-trabajador'}">
+            ${(usuario.rol === 'dueno' || usuario.rol === 'dueño') ? 'Dueño' : 'Trabajador'}
           </span>
         </td>
         <td>${negocio ? negocio.nombre : '-'}</td>
@@ -215,7 +246,7 @@ const adminApp = {
             <button class="btn btn-sm btn-secondary" onclick="adminApp.editarUsuario(${usuario.id})">
               ✏️ Editar
             </button>
-            <button class="btn btn-sm btn-danger" onclick="adminApp.eliminarUsuario(${usuario.id}, '${usuario.usuario}')">
+            <button class="btn btn-sm btn-danger" onclick="adminApp.eliminarUsuario(${usuario.id}, '${usuario.username}')">
               🗑️ Eliminar
             </button>
           </div>
@@ -224,8 +255,64 @@ const adminApp = {
       tbody.appendChild(tr);
     });
 
-    if (this.usuarios.length === 0) {
+    if (filtrados.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-gray);">No hay usuarios registrados</td></tr>';
+    }
+  },
+
+  renderClientes() {
+    const tbody = document.getElementById('clientesTable');
+    tbody.innerHTML = '';
+
+    // Aplicar filtros
+    let filtrados = [...this.clientes];
+    
+    if (this.filtrosClientes.tipo) {
+      if (this.filtrosClientes.tipo === 'cabina') {
+        filtrados = filtrados.filter(c => c.esCabina === true);
+      } else if (this.filtrosClientes.tipo === 'general') {
+        filtrados = filtrados.filter(c => c.esCabina !== true);
+      }
+    }
+
+    if (this.filtrosClientes.buscar) {
+      const term = this.filtrosClientes.buscar.toLowerCase();
+      filtrados = filtrados.filter(c => 
+        (c.nombre || '').toLowerCase().includes(term) ||
+        (c.telefono || '').toLowerCase().includes(term) ||
+        (c.cedula || '').toLowerCase().includes(term)
+      );
+    }
+
+    filtrados.forEach(cliente => {
+      const trabajosCount = cliente._count?.trabajos || 0;
+      const fecha = cliente.creadoEn ? new Date(cliente.creadoEn).toLocaleDateString() : '-';
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${cliente.nombre || '-'}</td>
+        <td>${cliente.telefono || '-'}</td>
+        <td>${cliente.cedula || '-'}</td>
+        <td>${cliente.edad || '-'}</td>
+        <td>
+          <span class="badge ${cliente.esCabina ? 'badge-info' : 'badge-secondary'}">
+            ${cliente.esCabina ? 'Cabina' : 'General'}
+          </span>
+        </td>
+        <td>${cliente.negocioOrigen || '-'}</td>
+        <td>${trabajosCount}</td>
+        <td>${fecha}</td>
+        <td>
+          <button class="btn btn-sm btn-danger" onclick="adminApp.eliminarCliente(${cliente.id}, '${cliente.nombre}')">
+            🗑️ Eliminar
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (filtrados.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-gray);">No hay clientes registrados</td></tr>';
     }
   },
 
@@ -265,10 +352,9 @@ const adminApp = {
   editarUsuario(id) {
     const usuario = this.usuarios.find(u => u.id === id);
     if (!usuario) return;
-
     document.getElementById('editUsuarioId').value = usuario.id;
-    document.getElementById('editUsuarioNombre').value = usuario.nombreCompleto || '';
-    document.getElementById('editUsuarioUsername').value = usuario.usuario;
+    document.getElementById('editUsuarioNombre').value = usuario.nombre || '';
+    document.getElementById('editUsuarioUsername').value = usuario.username;
     document.getElementById('editUsuarioPassword').value = '';
     document.getElementById('editUsuarioRol').value = usuario.rol;
     document.getElementById('editUsuarioNegocio').value = usuario.negocioId || '';
@@ -302,6 +388,49 @@ const adminApp = {
   },
 
   setupEventListeners() {
+        // Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.getAttribute('data-tab');
+            this.currentTab = tab;
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+          });
+        });
+
+        // Filtros usuarios
+        const filterNegocio = document.getElementById('filterNegocio');
+        const filterBuscar = document.getElementById('filterBuscar');
+        if (filterNegocio) {
+          filterNegocio.addEventListener('change', () => {
+            this.filtrosUsuarios.negocioId = filterNegocio.value;
+            this.renderUsuarios();
+          });
+        }
+        if (filterBuscar) {
+          filterBuscar.addEventListener('input', () => {
+            this.filtrosUsuarios.buscar = filterBuscar.value.trim();
+            this.renderUsuarios();
+          });
+        }
+
+        // Filtros clientes
+        const filterTipoCliente = document.getElementById('filterTipoCliente');
+        const filterBuscarCliente = document.getElementById('filterBuscarCliente');
+        if (filterTipoCliente) {
+          filterTipoCliente.addEventListener('change', () => {
+            this.filtrosClientes.tipo = filterTipoCliente.value;
+            this.renderClientes();
+          });
+        }
+        if (filterBuscarCliente) {
+          filterBuscarCliente.addEventListener('input', () => {
+            this.filtrosClientes.buscar = filterBuscarCliente.value.trim();
+            this.renderClientes();
+          });
+        }
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       API.auth.logout();
@@ -342,6 +471,7 @@ const adminApp = {
     ];
 
     negocioSelects.forEach(select => {
+      if (!select) return;
       this.negocios.forEach(negocio => {
         const option = document.createElement('option');
         option.value = negocio.id;
@@ -350,14 +480,24 @@ const adminApp = {
       });
     });
 
+    // Llenar filtro negocio
+    if (filterNegocio) {
+      this.negocios.forEach(negocio => {
+        const opt = document.createElement('option');
+        opt.value = negocio.id;
+        opt.textContent = negocio.nombre;
+        filterNegocio.appendChild(opt);
+      });
+    }
+
     // Form nuevo usuario
     document.getElementById('formNuevoUsuario').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const rol = document.getElementById('usuarioRol').value;
       const data = {
-        nombreCompleto: document.getElementById('usuarioNombre').value,
-        usuario: document.getElementById('usuarioUsername').value,
+        nombre: document.getElementById('usuarioNombre').value,
+        username: document.getElementById('usuarioUsername').value,
         password: document.getElementById('usuarioPassword').value,
         rol: rol,
         negocioId: rol === 'trabajador' ? parseInt(document.getElementById('usuarioNegocio').value) : null,
@@ -387,8 +527,8 @@ const adminApp = {
       const password = document.getElementById('editUsuarioPassword').value;
 
       const data = {
-        nombreCompleto: document.getElementById('editUsuarioNombre').value,
-        usuario: document.getElementById('editUsuarioUsername').value,
+        nombre: document.getElementById('editUsuarioNombre').value,
+        username: document.getElementById('editUsuarioUsername').value,
         rol: rol,
         negocioId: rol === 'trabajador' ? parseInt(document.getElementById('editUsuarioNegocio').value) || null : null,
         activo: document.getElementById('editUsuarioActivo').value === '1'
@@ -411,6 +551,15 @@ const adminApp = {
     });
   },
 
+  nuevoTrabajador(negocioId) {
+    // Abrir modal preseleccionando trabajador y negocio
+    this.showModal('nuevoUsuario');
+    document.getElementById('usuarioRol').value = 'trabajador';
+    document.getElementById('negocioGroup').style.display = 'block';
+    document.getElementById('usuarioNegocio').required = true;
+    document.getElementById('usuarioNegocio').value = negocioId;
+  },
+
   showModal(name) {
     const modal = document.getElementById(`modal${name.charAt(0).toUpperCase() + name.slice(1)}`);
     if (modal) {
@@ -422,6 +571,28 @@ const adminApp = {
     const modal = document.getElementById(`modal${name.charAt(0).toUpperCase() + name.slice(1)}`);
     if (modal) {
       modal.style.display = 'none';
+    }
+  },
+
+  eliminarCliente(id, nombre) {
+    document.getElementById('deleteClienteId').value = id;
+    document.getElementById('deleteClienteNombre').textContent = nombre;
+    this.showModal('eliminarCliente');
+  },
+
+  async confirmarEliminarCliente() {
+    const id = parseInt(document.getElementById('deleteClienteId').value);
+    if (!id) return;
+
+    try {
+      await API.clientes.delete(id);
+      this.closeModal('eliminarCliente');
+      await this.loadClientes();
+      this.renderClientes();
+      alert('Cliente eliminado correctamente');
+    } catch (error) {
+      console.error('Error eliminando cliente:', error);
+      alert('Error al eliminar el cliente. Puede que tenga trabajos asociados.');
     }
   },
 

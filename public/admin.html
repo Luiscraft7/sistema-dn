@@ -22,72 +22,128 @@
 
   <!-- Content -->
   <main class="container">
-    <!-- Estadísticas Generales -->
-    <div class="admin-header">
-      <h1>Panel de Administración</h1>
-      <div class="stats-grid-admin">
-        <div class="stat-card-admin">
-          <div class="stat-icon">🏢</div>
-          <div class="stat-value" id="totalNegocios">3</div>
-          <div class="stat-label">Negocios</div>
-        </div>
-        <div class="stat-card-admin">
-          <div class="stat-icon">👥</div>
-          <div class="stat-value" id="totalUsuarios">0</div>
-          <div class="stat-label">Usuarios</div>
-        </div>
-        <div class="stat-card-admin">
-          <div class="stat-icon">📋</div>
-          <div class="stat-value" id="totalTrabajos">0</div>
-          <div class="stat-label">Trabajos Activos</div>
-        </div>
-        <div class="stat-card-admin">
-          <div class="stat-icon">💰</div>
-          <div class="stat-value" id="totalIngresos">$0.00</div>
-          <div class="stat-label">Ingresos Hoy</div>
+    <!-- Tabs Navigation -->
+    <div class="tabs-nav" role="tablist">
+      <button class="tab-btn" data-tab="trabajos" role="tab">📋 Resumen Trabajos</button>
+      <button class="tab-btn" data-tab="negocios" role="tab">🏢 Negocios</button>
+      <button class="tab-btn" data-tab="usuarios" role="tab">👥 Usuarios</button>
+      <button class="tab-btn" data-tab="clientes" role="tab">👤 Clientes</button>
+      <button class="tab-btn" data-tab="overview" role="tab">📊 General</button>
+    </div>
+
+    <!-- Tab: Overview -->
+    <div class="tab-panel" id="tab-overview" role="tabpanel">
+      <div class="admin-header">
+        <h1>Panel de Administración</h1>
+        <div class="stats-grid-admin">
+          <div class="stat-card-admin">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-value" id="totalNegocios">0</div>
+            <div class="stat-label">Negocios</div>
+          </div>
+          <div class="stat-card-admin">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value" id="totalUsuarios">0</div>
+            <div class="stat-label">Usuarios Activos</div>
+          </div>
+          <div class="stat-card-admin">
+            <div class="stat-icon">📋</div>
+            <div class="stat-value" id="totalTrabajos">0</div>
+            <div class="stat-label">Trabajos Activos</div>
+          </div>
+          <div class="stat-card-admin">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="totalIngresos">$0.00</div>
+            <div class="stat-label">Ingresos Hoy</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Negocios -->
-    <div class="admin-section card">
-      <div class="section-header">
-        <h2>🏢 Negocios</h2>
-      </div>
-      <div class="negocios-grid" id="negociosGrid"></div>
-    </div>
-
-    <!-- Gestión de Usuarios -->
-    <div class="admin-section card">
-      <div class="section-header">
-        <h2>👥 Gestión de Usuarios</h2>
-        <button class="btn btn-primary" onclick="adminApp.showModal('nuevoUsuario')">
-          ➕ Nuevo Usuario
-        </button>
-      </div>
-      <div class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Nombre Completo</th>
-              <th>Rol</th>
-              <th>Negocio</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="usuariosTable"></tbody>
-        </table>
+    <!-- Tab: Negocios -->
+    <div class="tab-panel" id="tab-negocios" role="tabpanel">
+      <div class="admin-section card">
+        <div class="section-header">
+          <h2>🏢 Negocios</h2>
+        </div>
+        <div class="negocios-grid" id="negociosGrid"></div>
       </div>
     </div>
 
-    <!-- Resumen de Trabajos por Negocio -->
-    <div class="admin-section card">
-      <div class="section-header">
-        <h2>📊 Resumen de Trabajos</h2>
+    <!-- Tab: Usuarios -->
+    <div class="tab-panel" id="tab-usuarios" role="tabpanel">
+      <div class="admin-section card">
+        <div class="section-header">
+          <h2>👥 Gestión de Usuarios</h2>
+          <div class="section-actions">
+            <select id="filterNegocio" class="form-input" style="max-width:200px">
+              <option value="">Todos los negocios</option>
+            </select>
+            <input id="filterBuscar" class="form-input" placeholder="Buscar usuario..." style="max-width:200px" />
+            <button class="btn btn-primary" onclick="adminApp.showModal('nuevoUsuario')">➕ Nuevo Usuario</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Negocio</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usuariosTable"></tbody>
+          </table>
+        </div>
       </div>
-      <div class="trabajos-resumen" id="trabajosResumen"></div>
+    </div>
+
+    <!-- Tab: Resumen Trabajos -->
+    <div class="tab-panel active" id="tab-trabajos" role="tabpanel">
+      <div class="admin-section card">
+        <div class="section-header">
+          <h2>📊 Resumen de Trabajos</h2>
+        </div>
+        <div class="trabajos-resumen" id="trabajosResumen"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Clientes -->
+    <div class="tab-panel" id="tab-clientes" role="tabpanel">
+      <div class="admin-section card">
+        <div class="section-header">
+          <h2>👤 Gestión de Clientes</h2>
+          <div class="section-actions">
+            <select id="filterTipoCliente" class="form-input" style="max-width:200px">
+              <option value="">Todos los clientes</option>
+              <option value="cabina">Solo Cabinas</option>
+              <option value="general">Solo Generales</option>
+            </select>
+            <input id="filterBuscarCliente" class="form-input" placeholder="Buscar cliente..." style="max-width:200px" />
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Cédula</th>
+                <th>Edad</th>
+                <th>Tipo</th>
+                <th>Negocio</th>
+                <th>Trabajos</th>
+                <th>Fecha Registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clientesTable"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -199,6 +255,29 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Eliminación Cliente -->
+  <div id="modalEliminarCliente" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2>⚠️ Confirmar Eliminación</h2>
+        <button class="modal-close" onclick="adminApp.closeModal('eliminarCliente')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="deleteClienteId">
+        <p>¿Estás seguro de eliminar al cliente <strong id="deleteClienteNombre"></strong>?</p>
+        <p class="text-danger" style="font-size: 0.9rem; margin-top: 0.5rem;">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal('eliminarCliente')">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" onclick="adminApp.confirmarEliminarCliente()">
+          Eliminar
+        </button>
+      </div>
     </div>
   </div>
 

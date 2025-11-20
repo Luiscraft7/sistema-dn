@@ -42,7 +42,7 @@
       }
 
       // Redirigir según el rol
-      if (userData.rol === 'dueno') {
+      if (userData.rol === 'dueno' || userData.rol === 'dueño') {
         window.location.href = '/admin.html';
       } else if (userData.rol === 'trabajador') {
         // Redirigir al negocio asignado

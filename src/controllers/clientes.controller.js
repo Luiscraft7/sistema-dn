@@ -4,21 +4,30 @@ exports.getClientes = async (req, res) => {
   try {
     const { buscar, esCabina } = req.query;
 
-    let query = 'SELECT *, (SELECT COUNT(*) FROM trabajos WHERE cliente_id = clientes.id) as trabajos_count FROM clientes WHERE 1=1';
+    let query = `
+      SELECT c.*, 
+             (SELECT COUNT(*) FROM trabajos WHERE cliente_id = c.id) as trabajos_count,
+             (SELECT n.nombre FROM trabajos t 
+              JOIN negocios n ON t.negocio_id = n.id 
+              WHERE t.cliente_id = c.id 
+              ORDER BY t.fecha_creacion ASC LIMIT 1) as negocio_origen
+      FROM clientes c 
+      WHERE 1=1
+    `;
     const params = [];
 
     if (esCabina !== undefined) {
-      query += ' AND es_cabina = ?';
+      query += ' AND c.es_cabina = ?';
       params.push(esCabina === 'true' || esCabina === '1' ? 1 : 0);
     }
 
     if (buscar) {
-      query += ' AND (nombre LIKE ? OR telefono LIKE ? OR cedula LIKE ?)';
+      query += ' AND (c.nombre LIKE ? OR c.telefono LIKE ? OR c.cedula LIKE ?)';
       const searchTerm = `%${buscar}%`;
       params.push(searchTerm, searchTerm, searchTerm);
     }
 
-    query += ' ORDER BY creado_en DESC';
+    query += ' ORDER BY c.creado_en DESC';
 
     const clientes = await db.allAsync(query, params);
 
@@ -26,6 +35,7 @@ exports.getClientes = async (req, res) => {
     const clientesFormateados = clientes.map(c => ({
       ...c,
       esCabina: c.es_cabina === 1,
+      negocioOrigen: c.negocio_origen || (c.es_cabina === 1 ? 'Cabinas' : 'Sin trabajos'),
       _count: { trabajos: c.trabajos_count }
     }));
 
@@ -103,5 +113,44 @@ exports.createCliente = async (req, res) => {
   } catch (error) {
     console.error('Error al crear cliente:', error);
     res.status(500).json({ error: 'Error al crear cliente' });
+  }
+};
+
+exports.deleteCliente = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const clienteId = parseInt(id, 10);
+
+    if (isNaN(clienteId)) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    // Verificar si el cliente existe
+    const cliente = await db.getAsync('SELECT * FROM clientes WHERE id = ?', [clienteId]);
+
+    if (!cliente) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
+
+    // Verificar si tiene trabajos asociados
+    const trabajosCount = await db.getAsync(
+      'SELECT COUNT(*) as count FROM trabajos WHERE cliente_id = ?',
+      [clienteId]
+    );
+
+    if (trabajosCount.count > 0) {
+      return res.status(400).json({ 
+        error: `No se puede eliminar el cliente porque tiene ${trabajosCount.count} trabajo(s) asociado(s)` 
+      });
+    }
+
+    // Eliminar cliente
+    await db.runAsync('DELETE FROM clientes WHERE id = ?', [clienteId]);
+
+    res.json({ message: 'Cliente eliminado correctamente' });
+
+  } catch (error) {
+    console.error('Error al eliminar cliente:', error);
+    res.status(500).json({ error: 'Error al eliminar cliente' });
   }
 };

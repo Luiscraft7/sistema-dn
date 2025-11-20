@@ -46,9 +46,11 @@ exports.getTrabajos = async (req, res) => {
       clienteId: t.cliente_id,
       descripcion: t.descripcion,
       precioEstimado: t.precio_estimado,
+      estado: t.estado_actual,
       estadoActual: t.estado_actual,
       fechaCreacion: t.fecha_creacion,
       fechaFinalizacion: t.fecha_finalizacion,
+      fechaCompletado: t.fecha_finalizacion,
       cliente: {
         id: t.cliente_id,
         nombre: t.cliente_nombre,
@@ -108,8 +110,11 @@ exports.createTrabajo = async (req, res) => {
       clienteId: trabajo.cliente_id,
       descripcion: trabajo.descripcion,
       precioEstimado: trabajo.precio_estimado,
+      estado: trabajo.estado_actual,
       estadoActual: trabajo.estado_actual,
       fechaCreacion: trabajo.fecha_creacion,
+      fechaFinalizacion: trabajo.fecha_finalizacion,
+      fechaCompletado: trabajo.fecha_finalizacion,
       cliente: {
         id: trabajo.cliente_id,
         nombre: trabajo.cliente_nombre,
@@ -131,18 +136,57 @@ exports.updateTrabajo = async (req, res) => {
     const { id } = req.params;
     const { descripcion, precioEstimado } = req.body;
 
-    if (!descripcion || descripcion.trim() === '') {
-      return res.status(400).json({ error: 'La descripción es requerida' });
+    // Construir query dinámicamente
+    const updates = [];
+    const params = [];
+
+    if (descripcion !== undefined) {
+      if (descripcion.trim() === '') {
+        return res.status(400).json({ error: 'La descripción no puede estar vacía' });
+      }
+      updates.push('descripcion = ?');
+      params.push(descripcion.trim());
     }
 
-    await db.runAsync(`
-      UPDATE trabajos
-      SET descripcion = ?, precio_estimado = ?
-      WHERE id = ?
-    `, [descripcion.trim(), precioEstimado ? parseFloat(precioEstimado) : null, parseInt(id)]);
+    if (precioEstimado !== undefined) {
+      updates.push('precio_estimado = ?');
+      params.push(precioEstimado ? parseFloat(precioEstimado) : null);
+    }
 
-    const trabajo = await db.getAsync('SELECT * FROM trabajos WHERE id = ?', [parseInt(id)]);
-    res.json(trabajo);
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No hay campos para actualizar' });
+    }
+
+    params.push(parseInt(id));
+
+    await db.runAsync(
+      `UPDATE trabajos SET ${updates.join(', ')} WHERE id = ?`,
+      params
+    );
+
+    const trabajo = await db.getAsync(
+      `SELECT t.*, 
+              c.nombre as cliente_nombre, c.telefono as cliente_telefono,
+              n.nombre as negocio_nombre
+       FROM trabajos t
+       JOIN clientes c ON t.cliente_id = c.id
+       JOIN negocios n ON t.negocio_id = n.id
+       WHERE t.id = ?`,
+      [parseInt(id)]
+    );
+
+    res.json({
+      id: trabajo.id,
+      negocioId: trabajo.negocio_id,
+      clienteId: trabajo.cliente_id,
+      descripcion: trabajo.descripcion,
+      precioEstimado: trabajo.precio_estimado,
+      estado: trabajo.estado_actual,
+      estadoActual: trabajo.estado_actual,
+      fechaCreacion: trabajo.fecha_creacion,
+      fechaFinalizacion: trabajo.fecha_finalizacion,
+      fechaCompletado: trabajo.fecha_finalizacion
+    });
   } catch (error) {
     console.error('Error al actualizar trabajo:', error);
     res.status(500).json({ error: 'Error al actualizar trabajo' });
@@ -172,8 +216,38 @@ exports.updateEstado = async (req, res) => {
       VALUES (?, ?, ?, ?)
     `, [parseInt(id), estado, nota || null, req.user.id]);
 
-    const trabajo = await db.getAsync('SELECT * FROM trabajos WHERE id = ?', [parseInt(id)]);
-    res.json(trabajo);
+    const trabajo = await db.getAsync(
+      `SELECT t.*, 
+              c.nombre as cliente_nombre, c.telefono as cliente_telefono,
+              n.nombre as negocio_nombre
+       FROM trabajos t
+       JOIN clientes c ON t.cliente_id = c.id
+       JOIN negocios n ON t.negocio_id = n.id
+       WHERE t.id = ?`,
+      [parseInt(id)]
+    );
+
+    res.json({
+      id: trabajo.id,
+      negocioId: trabajo.negocio_id,
+      clienteId: trabajo.cliente_id,
+      descripcion: trabajo.descripcion,
+      precioEstimado: trabajo.precio_estimado,
+      estado: trabajo.estado_actual,
+      estadoActual: trabajo.estado_actual,
+      fechaCreacion: trabajo.fecha_creacion,
+      fechaFinalizacion: trabajo.fecha_finalizacion,
+      fechaCompletado: trabajo.fecha_finalizacion,
+      cliente: {
+        id: trabajo.cliente_id,
+        nombre: trabajo.cliente_nombre,
+        telefono: trabajo.cliente_telefono
+      },
+      negocio: {
+        id: trabajo.negocio_id,
+        nombre: trabajo.negocio_nombre
+      }
+    });
   } catch (error) {
     console.error('Error al actualizar estado:', error);
     res.status(500).json({ error: 'Error al actualizar estado' });

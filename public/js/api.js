@@ -80,6 +80,14 @@ const clientes = {
       body: JSON.stringify(data)
     });
     return handleResponse(response);
+  },
+
+  delete: async (id) => {
+    const response = await fetch(`${API_URL}/clientes/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
   }
 };
 
