@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Administrador - Sistema DN</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-content">
+      <div class="navbar-brand">📊 Sistema DN - Administración</div>
+      <div class="navbar-user">
+        <span id="navbarUser" class="navbar-username">Administrador</span>
+        <span class="badge badge-primary">Dueño</span>
+        <button id="logoutBtn" class="btn btn-sm btn-danger">Salir</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="container">
+    <!-- Estadísticas Generales -->
+    <div class="admin-header">
+      <h1>Panel de Administración</h1>
+      <div class="stats-grid-admin">
+        <div class="stat-card-admin">
+          <div class="stat-icon">🏢</div>
+          <div class="stat-value" id="totalNegocios">3</div>
+          <div class="stat-label">Negocios</div>
+        </div>
+        <div class="stat-card-admin">
+          <div class="stat-icon">👥</div>
+          <div class="stat-value" id="totalUsuarios">0</div>
+          <div class="stat-label">Usuarios</div>
+        </div>
+        <div class="stat-card-admin">
+          <div class="stat-icon">📋</div>
+          <div class="stat-value" id="totalTrabajos">0</div>
+          <div class="stat-label">Trabajos Activos</div>
+        </div>
+        <div class="stat-card-admin">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="totalIngresos">$0.00</div>
+          <div class="stat-label">Ingresos Hoy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Negocios -->
+    <div class="admin-section card">
+      <div class="section-header">
+        <h2>🏢 Negocios</h2>
+      </div>
+      <div class="negocios-grid" id="negociosGrid"></div>
+    </div>
+
+    <!-- Gestión de Usuarios -->
+    <div class="admin-section card">
+      <div class="section-header">
+        <h2>👥 Gestión de Usuarios</h2>
+        <button class="btn btn-primary" onclick="adminApp.showModal('nuevoUsuario')">
+          ➕ Nuevo Usuario
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre Completo</th>
+              <th>Rol</th>
+              <th>Negocio</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="usuariosTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Resumen de Trabajos por Negocio -->
+    <div class="admin-section card">
+      <div class="section-header">
+        <h2>📊 Resumen de Trabajos</h2>
+      </div>
+      <div class="trabajos-resumen" id="trabajosResumen"></div>
+    </div>
+  </main>
+
+  <!-- Modal Nuevo Usuario -->
+  <div id="modalNuevoUsuario" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>➕ Nuevo Usuario</h2>
+        <button class="modal-close" onclick="adminApp.closeModal('nuevoUsuario')">&times;</button>
+      </div>
+      <form id="formNuevoUsuario" class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre Completo *</label>
+          <input type="text" id="usuarioNombre" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Usuario *</label>
+          <input type="text" id="usuarioUsername" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contraseña *</label>
+          <input type="password" id="usuarioPassword" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Rol *</label>
+          <select id="usuarioRol" class="form-input" required>
+            <option value="">Seleccionar rol</option>
+            <option value="dueno">Dueño</option>
+            <option value="trabajador">Trabajador</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="negocioGroup" style="display: none;">
+          <label class="form-label">Negocio *</label>
+          <select id="usuarioNegocio" class="form-input">
+            <option value="">Seleccionar negocio</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal('nuevoUsuario')">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Crear Usuario
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Editar Usuario -->
+  <div id="modalEditarUsuario" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>✏️ Editar Usuario</h2>
+        <button class="modal-close" onclick="adminApp.closeModal('editarUsuario')">&times;</button>
+      </div>
+      <form id="formEditarUsuario" class="modal-body">
+        <input type="hidden" id="editUsuarioId">
+        
+        <div class="form-group">
+          <label class="form-label">Nombre Completo *</label>
+          <input type="text" id="editUsuarioNombre" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Usuario *</label>
+          <input type="text" id="editUsuarioUsername" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nueva Contraseña (dejar vacío para mantener)</label>
+          <input type="password" id="editUsuarioPassword" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Rol *</label>
+          <select id="editUsuarioRol" class="form-input" required>
+            <option value="dueno">Dueño</option>
+            <option value="trabajador">Trabajador</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="editNegocioGroup">
+          <label class="form-label">Negocio</label>
+          <select id="editUsuarioNegocio" class="form-input">
+            <option value="">Sin negocio asignado</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select id="editUsuarioActivo" class="form-input" required>
+            <option value="1">Activo</option>
+            <option value="0">Inactivo</option>
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal('editarUsuario')">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

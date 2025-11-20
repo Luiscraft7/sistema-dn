@@ -1,0 +1,329 @@
+/* Admin Dashboard Styles */
+:root {
+  --admin-primary: #6366f1;
+  --admin-secondary: #818cf8;
+}
+
+.admin-header {
+  margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+  margin: 0 0 1.5rem 0;
+  color: var(--text-light);
+  font-size: 2rem;
+}
+
+.stats-grid-admin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card-admin {
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transition: all 0.3s ease;
+}
+
+.stat-card-admin:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+}
+
+.stat-card-admin .stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.9;
+}
+
+.stat-card-admin .stat-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.stat-card-admin .stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.admin-section {
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-light);
+}
+
+/* Negocios Grid */
+.negocios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.negocio-card {
+  background: var(--bg-dark);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 2px solid var(--border);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.negocio-card:hover {
+  border-color: var(--admin-primary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.negocio-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.negocio-icon {
+  font-size: 3rem;
+}
+
+.negocio-info h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-light);
+}
+
+.negocio-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.negocio-stat {
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--bg-card);
+  border-radius: 0.5rem;
+}
+
+.negocio-stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--admin-primary);
+}
+
+.negocio-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-gray);
+  margin-top: 0.25rem;
+}
+
+/* Table Styles */
+.table-container {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  background: var(--bg-dark);
+}
+
+.data-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-light);
+  border-bottom: 2px solid var(--border);
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-gray);
+}
+
+.data-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--bg-dark);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.user-username {
+  font-size: 0.85rem;
+  color: var(--text-gray);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Trabajos Resumen */
+.trabajos-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.resumen-card {
+  background: var(--bg-dark);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--admin-primary);
+}
+
+.resumen-card h3 {
+  margin: 0 0 1rem 0;
+  color: var(--text-light);
+  font-size: 1.2rem;
+}
+
+.resumen-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+}
+
+.resumen-stat {
+  text-align: center;
+}
+
+.resumen-stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--admin-primary);
+}
+
+.resumen-stat-label {
+  font-size: 0.85rem;
+  color: var(--text-gray);
+  margin-top: 0.25rem;
+}
+
+.resumen-stat-value.warning {
+  color: var(--warning);
+}
+
+.resumen-stat-value.success {
+  color: var(--success);
+}
+
+.resumen-stat-value.info {
+  color: var(--primary);
+}
+
+/* Badge variants */
+.badge-active {
+  background: var(--success);
+  color: white;
+}
+
+.badge-inactive {
+  background: var(--danger);
+  color: white;
+}
+
+.badge-dueno {
+  background: var(--admin-primary);
+  color: white;
+}
+
+.badge-trabajador {
+  background: var(--primary);
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats-grid-admin {
+    grid-template-columns: 1fr;
+  }
+
+  .negocios-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trabajos-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .section-header .btn {
+    width: 100%;
+  }
+
+  .table-container {
+    font-size: 0.9rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .negocio-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .resumen-stats {
+    flex-direction: column;
+  }
+}

@@ -3,8 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Sistema DN</title>
+  <title>Redireccionando...</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      gap: 1rem;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <script src="/js/api.js"></script>
+  <script>
+    // Redirigir automáticamente según el rol del usuario
+    async function redirect() {
+      if (!API.checkAuth()) {
+        window.location.href = '/login.html';
+        return;
+      }
+
+      const userData = await API.verifyAuth();
+      if (!userData) {
+        window.location.href = '/login.html';
+        return;
+      }
+
+      // Redirigir según el rol
+      if (userData.rol === 'dueno') {
+        window.location.href = '/admin.html';
+      } else if (userData.rol === 'trabajador') {
+        // Redirigir al negocio asignado
+        const negocios = await API.negocios.getAll();
+        const negocio = negocios.find(n => n.id === userData.negocioId);
+        
+        if (negocio) {
+          if (negocio.nombre === 'Cabinas') {
+            window.location.href = '/cabinas.html';
+          } else if (negocio.nombre === 'Impresión') {
+            window.location.href = '/impresion.html';
+          } else if (negocio.nombre === 'Lavacar') {
+            window.location.href = '/lavacar.html';
+          } else {
+            window.location.href = '/admin.html';
+          }
+        } else {
+          alert('No tienes un negocio asignado');
+          window.location.href = '/login.html';
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', redirect);
+  </script>
   <style>
     .dashboard-header {
       display: flex;
@@ -151,26 +214,9 @@
   </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="navbar-content">
-      <a href="/dashboard.html" class="navbar-brand">🏢 Sistema DN</a>
-      <div class="navbar-user">
-        <span id="navbarUser" class="navbar-username">Usuario</span>
-        <span id="navbarRole" class="badge badge-info">Rol</span>
-        <button id="logoutBtn" class="btn btn-sm btn-danger">Salir</button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Content -->
-  <main class="container">
-    <div id="dashboardContent">
-      <p class="text-muted">Cargando...</p>
-    </div>
-  </main>
-
-  <script src="/js/api.js"></script>
-  <script src="/js/dashboard.js"></script>
+  <div class="loading-container">
+    <div class="spinner"></div>
+    <p style="color: var(--text-gray);">Redireccionando...</p>
+  </div>
 </body>
 </html>

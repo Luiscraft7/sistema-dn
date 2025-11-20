@@ -1,0 +1,179 @@
+/* Impresión Styles */
+:root {
+  --impresion-primary: #8b5cf6;
+  --impresion-secondary: #a78bfa;
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2rem 0;
+  padding: 1rem;
+  background: var(--bg-card);
+  border-radius: 0.5rem;
+}
+
+.actions-bar h2 {
+  margin: 0;
+  color: var(--impresion-primary);
+  font-size: 1.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: var(--impresion-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--impresion-primary);
+  margin: 0.5rem 0;
+}
+
+.stat-label {
+  color: var(--text-gray);
+  font-size: 0.9rem;
+}
+
+.trabajos-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.trabajos-section {
+  min-height: 300px;
+}
+
+.trabajos-section h3 {
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+  font-size: 1.1rem;
+}
+
+.trabajos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.trabajo-item {
+  background: var(--bg-dark);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--impresion-primary);
+  transition: all 0.2s ease;
+}
+
+.trabajo-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.trabajo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 0.75rem;
+}
+
+.trabajo-cliente {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text-light);
+}
+
+.trabajo-descripcion {
+  color: var(--text-gray);
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.trabajo-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.trabajo-precio {
+  font-weight: bold;
+  color: var(--success);
+  font-size: 1.1rem;
+}
+
+.trabajo-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+/* Estados específicos */
+#trabajosPendientes .trabajo-item {
+  border-left-color: #f59e0b;
+}
+
+#trabajosEnProceso .trabajo-item {
+  border-left-color: var(--impresion-primary);
+}
+
+#trabajosCompletados .trabajo-item {
+  border-left-color: var(--success);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .trabajos-container {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions-bar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .actions-bar h2 {
+    width: 100%;
+  }
+
+  .actions-bar .btn {
+    width: 100%;
+  }
+}

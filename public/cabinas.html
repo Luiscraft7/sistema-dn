@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cabinas - Sistema DN</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/cabinas.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-content">
+      <a href="/dashboard.html" class="navbar-brand">🖥️ Cabinas de Internet</a>
+      <div class="navbar-user">
+        <span id="navbarUser" class="navbar-username">Usuario</span>
+        <span id="navbarRole" class="badge badge-info">Trabajador</span>
+        <button id="logoutBtn" class="btn btn-sm btn-danger">Salir</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main class="container">
+    <!-- Estadísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value" id="statEnEspera">0</div>
+        <div class="stat-label">En Espera</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💻</div>
+        <div class="stat-value" id="statActivas">0</div>
+        <div class="stat-label">Sesiones Activas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" id="statCompletados">0</div>
+        <div class="stat-label">Completados Hoy</div>
+      </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="actions-bar">
+      <h2>Cabinas de Internet</h2>
+      <button class="btn btn-primary" onclick="cabinasApp.showModal('nuevaSesion')">
+        ➕ Nueva Sesión
+      </button>
+    </div>
+
+    <!-- Lista de sesiones -->
+    <div class="trabajos-container">
+      <div class="trabajos-section card">
+        <h3>⏳ En Espera</h3>
+        <div id="trabajosPendientes" class="trabajos-list"></div>
+      </div>
+
+      <div class="trabajos-section card">
+        <h3>💻 Sesiones Activas</h3>
+        <div id="trabajosEnProceso" class="trabajos-list"></div>
+      </div>
+
+      <div class="trabajos-section card">
+        <h3>✅ Completados</h3>
+        <div id="trabajosCompletados" class="trabajos-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Nueva Sesión -->
+  <div id="modalNuevaSesion" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>➕ Nueva Sesión - Cabinas</h2>
+        <button class="modal-close" onclick="cabinasApp.closeModal('nuevaSesion')">&times;</button>
+      </div>
+      <form id="formNuevaSesion" class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Cliente *</label>
+          <select id="trabajoCliente" class="form-input" required>
+            <option value="">Seleccionar cliente</option>
+          </select>
+          <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="cabinasApp.showModal('nuevoCliente')">
+            ➕ Nuevo Cliente
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción del Servicio *</label>
+          <textarea id="trabajoDescripcion" class="form-input" rows="3" required 
+            placeholder="Ej: Navegación, impresión, tareas escolares..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Precio por Hora</label>
+          <input type="number" id="trabajoPrecio" class="form-input" step="0.01" min="0" placeholder="0.00">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="cabinasApp.closeModal('nuevaSesion')">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Iniciar Sesión
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Nuevo Cliente -->
+  <div id="modalNuevoCliente" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>➕ Nuevo Cliente</h2>
+        <button class="modal-close" onclick="cabinasApp.closeModal('nuevoCliente')">&times;</button>
+      </div>
+      <form id="formNuevoCliente" class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nombre *</label>
+          <input type="text" id="clienteNombre" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="tel" id="clienteTelefono" class="form-input" placeholder="0000-0000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Cédula</label>
+          <input type="text" id="clienteCedula" class="form-input" placeholder="0-0000-0000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Edad</label>
+          <input type="number" id="clienteEdad" class="form-input" min="0" placeholder="18">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nota Extra</label>
+          <textarea id="clienteNota" class="form-input" rows="2" placeholder="Información adicional..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="cabinasApp.closeModal('nuevoCliente')">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Guardar Cliente
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/cabinas.js"></script>
+</body>
+</html>
