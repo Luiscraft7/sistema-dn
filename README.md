@@ -2,7 +2,7 @@
 
 Sistema web para gestionar 3 negocios: **Lavacar**, **Impresión** y **Cabinas**.
 
-Diseñado para uso principalmente en móvil con equipos pequeños, incluye gestión completa de clientes, trabajos y usuarios con roles diferenciados.
+Diseñado para uso principalmente en móvil con equipos pequeños, incluye gestión completa de clientes, trabajos y usuarios con roles diferenciados. Construido con vanilla JavaScript (sin frameworks) para máxima simplicidad.
 
 ---
 
@@ -11,6 +11,7 @@ Diseñado para uso principalmente en móvil con equipos pequeños, incluye gesti
 - ✅ **Login cerrado** - Solo el dueño puede crear usuarios
 - ✅ **3 negocios independientes** - Cada uno con sus propios trabajos
 - ✅ **Gestión de clientes** - Información de contacto y historial
+- ✅ **Clientes especiales para Cabinas** - Con cédula y edad
 - ✅ **Seguimiento de trabajos** - Estados: pendiente, en proceso, completado, cancelado
 - ✅ **Historial completo** - Registro de todos los cambios de estado
 - ✅ **Actualización automática** - Polling cada 10-15 segundos
@@ -24,45 +25,32 @@ Diseñado para uso principalmente en móvil con equipos pequeños, incluye gesti
 ### Requisitos Previos
 
 - Node.js 18+ 
-- npm o yarn
+- npm
 
 ### 1. Instalar Dependencias
 
 ```bash
-# Backend
-cd backend
-npm install
-
-# Frontend
-cd ../frontend
 npm install
 ```
 
-### 2. Configurar Base de Datos
+### 2. Inicializar Base de Datos
 
 ```bash
-cd ../backend
-
-# Generar cliente de Prisma y crear base de datos
-npx prisma generate
-npx prisma migrate dev --name init
-
-# Inicializar datos (crea usuario admin y 3 negocios)
-npm run db:init
+npm run init-db
 ```
+
+Esto creará:
+- 3 negocios: Lavacar, Impresión, Cabinas
+- 4 usuarios: admin (dueño) y 3 trabajadores (juan, maria, carlos)
 
 ### 3. Iniciar el Sistema
 
-Desde la raíz del proyecto:
-
 ```bash
-cd ..
-node server.js
+npm start
 ```
 
-**¡Eso es todo!** El sistema completo estará corriendo en:
-- **Frontend**: http://localhost:5173
-- **Backend**: http://localhost:3000
+**¡Eso es todo!** El sistema estará corriendo en:
+- **Sistema completo**: http://localhost:3000
 
 ---
 
@@ -79,35 +67,40 @@ node server.js
 
 ```
 Sistema-DN/
-├── backend/
-│   ├── prisma/
-│   │   └── schema.prisma          # Esquema de la base de datos
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── database.js        # Configuración de Prisma
-│   │   ├── controllers/           # Lógica de negocio
-│   │   ├── middleware/            # Auth y validación
-│   │   ├── routes/                # Rutas de la API
-│   │   ├── scripts/
-│   │   │   └── init.js            # Script de inicialización
-│   │   └── index.js               # Entrada del servidor
-│   ├── .env                       # Variables de entorno
-│   └── package.json
+├── src/
+│   ├── db/
+│   │   ├── database.js            # Conexión SQLite con promisify
+│   │   └── init.js                # Script de inicialización
+│   ├── controllers/               # Lógica de negocio
+│   │   ├── auth.controller.js
+│   │   ├── clientes.controller.js
+│   │   ├── negocios.controller.js
+│   │   ├── trabajos.controller.js
+│   │   └── usuarios.controller.js
+│   ├── middleware/
+│   │   └── auth.middleware.js     # JWT authentication
+│   ├── routes/                    # Rutas de la API
+│   │   ├── auth.routes.js
+│   │   ├── clientes.routes.js
+│   │   ├── negocios.routes.js
+│   │   ├── trabajos.routes.js
+│   │   └── usuarios.routes.js
+│   └── server.js                  # Servidor Express
 │
-├── frontend/
-│   ├── src/
-│   │   ├── components/            # Componentes reutilizables
-│   │   ├── context/               # Context API (Auth)
-│   │   ├── hooks/                 # Custom hooks (Polling)
-│   │   ├── pages/                 # Páginas/Vistas
-│   │   ├── services/              # API calls
-│   │   ├── App.jsx                # Configuración de rutas
-│   │   ├── main.jsx               # Entrada de la app
-│   │   └── index.css              # Estilos globales
-│   ├── vite.config.js             # Configuración de Vite
-│   └── package.json
+├── public/                        # Frontend estático
+│   ├── css/
+│   │   └── styles.css             # Estilos completos
+│   ├── js/
+│   │   ├── api.js                 # Cliente API
+│   │   ├── dashboard.js           # Lógica del dashboard
+│   │   └── login.js               # Lógica del login
+│   ├── login.html                 # Página de login
+│   ├── dashboard.html             # Dashboard principal
+│   └── index.html                 # Entrada de la app
 │
-├── WEBSOCKETS.md                  # Guía de migración a WebSockets
+├── database.db                    # Base de datos SQLite
+├── .env                           # Variables de entorno
+├── package.json
 └── README.md
 ```
 
@@ -182,18 +175,17 @@ Trabajo 1:N HistorialEstado
 ## 🎨 Tecnologías Utilizadas
 
 ### Backend
-- **Node.js** + **Express** - Servidor y API REST
-- **Prisma** + **SQLite** - ORM y base de datos
-- **JWT** - Autenticación
-- **bcrypt** - Hash de contraseñas
+- **Node.js 18+** + **Express** - Servidor y API REST
+- **SQLite3** - Base de datos ligera (sin ORM)
+- **JWT** - Autenticación con tokens
+- **bcrypt** - Hash seguro de contraseñas
 - **CORS** - Seguridad cross-origin
 
 ### Frontend
-- **React 18** - Framework UI
-- **Vite** - Build tool y dev server
-- **React Router** - Navegación
-- **Context API** - Estado global
-- **CSS Modules** - Estilos responsive
+- **Vanilla JavaScript** - Sin frameworks, solo HTML/CSS/JS puro
+- **CSS Grid & Flexbox** - Layouts responsive
+- **Fetch API** - Llamadas HTTP al backend
+- **LocalStorage** - Persistencia de JWT
 
 ---
 
@@ -367,32 +359,36 @@ services:
 
 ## 🐛 Troubleshooting
 
-### Error: "Cannot find module '@prisma/client'"
-
-```bash
-cd backend
-npx prisma generate
-```
-
 ### Error: "EADDRINUSE: Port already in use"
 
 ```bash
-# Windows
+# Windows PowerShell
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process
+
+# O con netstat
 netstat -ano | findstr :3000
 taskkill /PID <PID> /F
-
-# Linux/Mac
-lsof -ti:3000 | xargs kill -9
 ```
 
 ### Base de datos corrupta
 
 ```bash
-cd backend
-rm dev.db
-npx prisma migrate reset
-npm run db:init
+Remove-Item database.db
+npm run init-db
 ```
+
+### El login no funciona
+
+Verifica que la base de datos está inicializada:
+```bash
+npm run init-db
+```
+
+Credenciales por defecto:
+- admin / admin123
+- juan / juan123
+- maria / maria123
+- carlos / carlos123
 
 ---
 
@@ -416,11 +412,15 @@ ISC
 Para iniciar el sistema cada vez:
 
 ```bash
-cd C:\Users\Alfon\Sistema-DN
-node server.js
+npm start
 ```
 
 Para detener: Presiona `Ctrl + C`
+
+Para desarrollo con recarga automática:
+```bash
+npm run dev
+```
 
 ---
 

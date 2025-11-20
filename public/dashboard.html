@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Sistema DN</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container navbar-content">
+      <a href="/dashboard.html" class="navbar-brand">Sistema DN</a>
+      <div class="navbar-menu">
+        <a href="/dashboard.html" class="navbar-link active">Dashboard</a>
+        <a href="/clientes.html" class="navbar-link" id="linkClientes">Clientes</a>
+        <a href="/cabinas.html" class="navbar-link hidden" id="linkCabinas">Cabinas</a>
+        <a href="/usuarios.html" class="navbar-link hidden" id="linkUsuarios">Usuarios</a>
+      </div>
+      <div class="navbar-user">
+        <span id="userName"></span>
+        <button class="btn btn-small btn-outline" onclick="api.auth.logout()">Salir</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="container">
+    <h1 id="pageTitle">Dashboard</h1>
+    <div id="dashboardContent"></div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

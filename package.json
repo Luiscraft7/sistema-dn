@@ -1,0 +1,28 @@
+{
+  "name": "sistema-dn",
+  "version": "2.0.0",
+  "description": "Sistema de gestión DN - Stack HTML/CSS/JS + Node.js + SQLite",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "init-db": "node src/db/init.js"
+  },
+  "keywords": ["sistema", "gestion", "trabajos", "negocios"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
