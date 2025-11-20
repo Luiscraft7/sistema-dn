@@ -1,44 +1,39 @@
 const bcrypt = require('bcrypt');
 const db = require('./database');
+const { SEED_DATA } = require('./schema');
 
-async function initDatabase() {
+async function inicializarDB() {
   console.log('🚀 Iniciando configuración de la base de datos...\n');
 
   try {
-    // Insertar negocios
+    // Crear negocios desde el schema
     console.log('📊 Creando negocios...');
-    const negocios = ['Lavacar', 'Impresión', 'Cabinas'];
     
-    for (const nombre of negocios) {
-      await db.runAsync('INSERT OR IGNORE INTO negocios (nombre) VALUES (?)', [nombre]);
-      console.log(`   ✅ Negocio "${nombre}" creado/verificado`);
+    for (const negocio of SEED_DATA.negocios) {
+      await db.runAsync('INSERT OR IGNORE INTO negocios (nombre) VALUES (?)', [negocio.nombre]);
+      console.log(`   ✅ Negocio "${negocio.nombre}" creado/verificado`);
     }
 
     // Obtener IDs de negocios
-    const lavacar = await db.getAsync('SELECT id FROM negocios WHERE nombre = ?', ['Lavacar']);
-    const impresion = await db.getAsync('SELECT id FROM negocios WHERE nombre = ?', ['Impresión']);
-    const cabinas = await db.getAsync('SELECT id FROM negocios WHERE nombre = ?', ['Cabinas']);
-    
-    const lavacarId = lavacar.id;
-    const impresionId = impresion.id;
-    const cabinasId = cabinas.id;
+    const negociosMap = {};
+    for (const negocio of SEED_DATA.negocios) {
+      const row = await db.getAsync('SELECT id FROM negocios WHERE nombre = ?', [negocio.nombre]);
+      negociosMap[negocio.nombre] = row.id;
+    }
 
-    // Crear usuarios
+    // Crear usuarios desde el schema
     console.log('\n👤 Creando usuarios...');
-    const usuarios = [
-      { nombre: 'Administrador', username: 'admin', password: 'admin123', rol: 'dueño', negocioId: null },
-      { nombre: 'Juan Pérez', username: 'juan', password: 'juan123', rol: 'trabajador', negocioId: lavacarId },
-      { nombre: 'María García', username: 'maria', password: 'maria123', rol: 'trabajador', negocioId: impresionId },
-      { nombre: 'Carlos López', username: 'carlos', password: 'carlos123', rol: 'trabajador', negocioId: cabinasId }
-    ];
-
-    for (const userData of usuarios) {
+    
+    for (const userData of SEED_DATA.usuarios) {
+      // Resolver negocio_id si tiene negocio asignado
+      const negocioId = userData.negocio ? negociosMap[userData.negocio] : null;
+      
       const exists = await db.getAsync('SELECT id FROM usuarios WHERE username = ?', [userData.username]);
       if (!exists) {
         const passwordHash = await bcrypt.hash(userData.password, 10);
         await db.runAsync(
           `INSERT INTO usuarios (nombre, username, password_hash, rol, negocio_id, activo) VALUES (?, ?, ?, ?, ?, 1)`,
-          [userData.nombre, userData.username, passwordHash, userData.rol, userData.negocioId]
+          [userData.nombre, userData.username, passwordHash, userData.rol, negocioId]
         );
         console.log(`   ✅ Usuario "${userData.nombre}" creado`);
         console.log(`      Username: ${userData.username} | Password: ${userData.password} | Rol: ${userData.rol}`);
@@ -62,7 +57,7 @@ async function initDatabase() {
 
 // Ejecutar si se llama directamente
 if (require.main === module) {
-  initDatabase().then(() => process.exit(0));
+  inicializarDB().then(() => process.exit(0));
 }
 
-module.exports = initDatabase;
+module.exports = inicializarDB;
