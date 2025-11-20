@@ -170,11 +170,16 @@ const usuarios = {
   }
 };
 
-// Check if user is logged in
-const checkAuth = async () => {
+// Check if user is logged in (solo verifica, no redirige)
+const checkAuth = () => {
+  const token = getToken();
+  return !!token; // Retorna true si hay token, false si no
+};
+
+// Verificar autenticación con el servidor
+const verifyAuth = async () => {
   const token = getToken();
   if (!token) {
-    window.location.href = '/login.html';
     return null;
   }
 
@@ -183,19 +188,30 @@ const checkAuth = async () => {
     return user;
   } catch (error) {
     removeToken();
-    window.location.href = '/login.html';
     return null;
   }
 };
 
-// Export API
-window.api = {
+// Export API (compatible con navegador)
+const API = {
   auth,
   negocios,
   clientes,
   trabajos,
   usuarios,
   checkAuth,
+  verifyAuth,
   setToken,
-  removeToken
+  removeToken,
+  getToken
 };
+
+// Para compatibilidad con imports
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = API;
+}
+
+// Para uso global en el navegador
+if (typeof window !== 'undefined') {
+  window.API = API;
+}

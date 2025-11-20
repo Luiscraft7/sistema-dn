@@ -58,29 +58,6 @@
   </div>
 
   <script src="/js/api.js"></script>
-  <script>
-    // Redirect if already logged in
-    if (localStorage.getItem('token')) {
-      window.location.href = '/dashboard.html';
-    }
-
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const errorDiv = document.getElementById('error');
-
-      try {
-        errorDiv.classList.add('hidden');
-        const result = await api.auth.login(username, password);
-        api.setToken(result.token);
-        window.location.href = '/dashboard.html';
-      } catch (error) {
-        errorDiv.textContent = error.message;
-        errorDiv.classList.remove('hidden');
-      }
-    });
-  </script>
+  <script src="/js/login.js"></script>
 </body>
 </html>

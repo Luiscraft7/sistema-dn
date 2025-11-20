@@ -5,30 +5,170 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Sistema DN</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .dashboard-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filters-section {
+      margin-bottom: 2rem;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .negocios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .negocio-section h2 {
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      text-align: center;
+      padding: 1.5rem;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .trabajo-card {
+      margin-bottom: 1rem;
+      padding: 1rem;
+    }
+
+    .trabajo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 0.5rem;
+    }
+
+    .trabajo-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .trabajo-descripcion {
+      color: var(--text-secondary);
+      margin: 0.5rem 0;
+    }
+
+    .trabajo-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .trabajo-precio {
+      font-weight: bold;
+      color: var(--success);
+    }
+
+    .trabajo-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-large {
+      max-width: 800px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table th {
+      background-color: var(--bg-dark);
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .negocios-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .table {
+        font-size: 0.875rem;
+      }
+
+      .table th,
+      .table td {
+        padding: 0.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
   <!-- Navbar -->
   <nav class="navbar">
-    <div class="container navbar-content">
-      <a href="/dashboard.html" class="navbar-brand">Sistema DN</a>
-      <div class="navbar-menu">
-        <a href="/dashboard.html" class="navbar-link active">Dashboard</a>
-        <a href="/clientes.html" class="navbar-link" id="linkClientes">Clientes</a>
-        <a href="/cabinas.html" class="navbar-link hidden" id="linkCabinas">Cabinas</a>
-        <a href="/usuarios.html" class="navbar-link hidden" id="linkUsuarios">Usuarios</a>
-      </div>
+    <div class="navbar-content">
+      <a href="/dashboard.html" class="navbar-brand">🏢 Sistema DN</a>
       <div class="navbar-user">
-        <span id="userName"></span>
-        <button class="btn btn-small btn-outline" onclick="api.auth.logout()">Salir</button>
+        <span id="navbarUser" class="navbar-username">Usuario</span>
+        <span id="navbarRole" class="badge badge-info">Rol</span>
+        <button id="logoutBtn" class="btn btn-sm btn-danger">Salir</button>
       </div>
     </div>
   </nav>
 
   <!-- Content -->
-  <div class="container">
-    <h1 id="pageTitle">Dashboard</h1>
-    <div id="dashboardContent"></div>
-  </div>
+  <main class="container">
+    <div id="dashboardContent">
+      <p class="text-muted">Cargando...</p>
+    </div>
+  </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/dashboard.js"></script>
