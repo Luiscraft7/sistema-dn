@@ -106,10 +106,6 @@
       <div class="admin-section card">
         <div class="section-header">
           <h2>📊 Resumen de Trabajos</h2>
-          <div class="section-actions" style="gap:.5rem; flex-wrap:wrap">
-            <button class="btn btn-sm btn-secondary" id="btnVistaResumida">Vista resumida</button>
-            <button class="btn btn-sm btn-secondary" id="btnVistaExpandida">Vista expandida</button>
-          </div>
         </div>
         <div class="trabajos-resumen" id="trabajosResumen"></div>
       </div>
@@ -281,28 +277,6 @@
         <button type="button" class="btn btn-danger" onclick="adminApp.confirmarEliminarCliente()">
           Eliminar
         </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Detalle Negocio -->
-  <div id="modalDetalleNegocio" class="modal">
-    <div class="modal-content modal-detalle-negocio">
-      <div class="modal-header">
-        <h2 id="detalleNegocioTitulo">Negocio</h2>
-        <button class="modal-close" onclick="adminApp.closeModal('detalleNegocio')">&times;</button>
-      </div>
-      <div class="modal-body" id="detalleNegocioBody">
-        <div class="detalle-negocio-tabs">
-          <button class="detalle-tab active" data-estado="en_proceso">En Proceso</button>
-          <button class="detalle-tab" data-estado="pendiente">Pendientes</button>
-          <button class="detalle-tab" data-estado="completado">Completados</button>
-        </div>
-        <div id="detalleListado" class="detalle-listado"></div>
-      </div>
-      <div class="modal-footer" style="justify-content:space-between">
-        <small id="detalleResumenCounts" style="color:var(--text-gray)"></small>
-        <button type="button" class="btn btn-secondary" onclick="adminApp.closeModal('detalleNegocio')">Cerrar</button>
       </div>
     </div>
   </div>

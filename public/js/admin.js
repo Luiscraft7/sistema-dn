@@ -14,6 +14,7 @@ const adminApp = {
     tipo: '',
     buscar: ''
   },
+  filtroNegocio: null,
 
   async init() {
     // Verificar token
@@ -337,9 +338,40 @@ const adminApp = {
       return new Date(b.fechaCreacion) - new Date(a.fechaCreacion);
     });
 
-    // Resumen por negocio (tarjetas superiores)
+    // Resumen por negocio (tarjetas superiores) - ahora son filtros
     const resumenGrid = document.createElement('div');
     resumenGrid.className = 'trabajos-resumen-grid';
+    
+    // Botón "Todos"
+    const cardTodos = document.createElement('div');
+    cardTodos.className = `resumen-card filtro-card ${!this.filtroNegocio ? 'active' : ''}`;
+    const totalTrabajos = this.trabajos.length;
+    const totalPendientes = this.trabajos.filter(t => t.estado === 'pendiente').length;
+    const totalEnProceso = this.trabajos.filter(t => t.estado === 'en_proceso').length;
+    const totalCompletados = this.trabajos.filter(t => t.estado === 'completado').length;
+    cardTodos.innerHTML = `
+      <h3>🏢 Todos <span class="resumen-total">${totalTrabajos} trabajos</span></h3>
+      <div class="resumen-stats">
+        <div class="resumen-stat">
+          <div class="resumen-stat-value warning">${totalPendientes}</div>
+          <div class="resumen-stat-label">Pendientes</div>
+        </div>
+        <div class="resumen-stat">
+          <div class="resumen-stat-value info">${totalEnProceso}</div>
+          <div class="resumen-stat-label">En Proceso</div>
+        </div>
+        <div class="resumen-stat">
+          <div class="resumen-stat-value success">${totalCompletados}</div>
+          <div class="resumen-stat-label">Completados</div>
+        </div>
+      </div>
+    `;
+    cardTodos.addEventListener('click', () => {
+      this.filtroNegocio = null;
+      this.renderTrabajosResumen();
+    });
+    resumenGrid.appendChild(cardTodos);
+
     this.negocios.forEach(negocio => {
       const trabajosNegocio = this.trabajos.filter(t => t.negocioId === negocio.id);
       const pendientes = trabajosNegocio.filter(t => t.estado === 'pendiente').length;
@@ -347,11 +379,10 @@ const adminApp = {
       const completados = trabajosNegocio.filter(t => t.estado === 'completado').length;
 
       const card = document.createElement('div');
-      card.className = 'resumen-card clickable';
-      card.setAttribute('data-negocio-id', negocio.id);
-      card.setAttribute('data-negocio-nombre', negocio.nombre);
+      card.className = `resumen-card filtro-card ${this.filtroNegocio === negocio.id ? 'active' : ''}`;
+      const icono = this.getIconoNegocio(negocio.nombre);
       card.innerHTML = `
-        <h3>${negocio.nombre} <span class="resumen-total">${trabajosNegocio.length} trabajos</span></h3>
+        <h3>${icono} ${negocio.nombre} <span class="resumen-total">${trabajosNegocio.length} trabajos</span></h3>
         <div class="resumen-stats">
           <div class="resumen-stat">
             <div class="resumen-stat-value warning">${pendientes}</div>
@@ -367,28 +398,92 @@ const adminApp = {
           </div>
         </div>
       `;
-      card.addEventListener('click', () => this.abrirDetalleNegocio(negocio.id));
+      card.addEventListener('click', () => {
+        this.filtroNegocio = negocio.id;
+        this.renderTrabajosResumen();
+      });
       resumenGrid.appendChild(card);
     });
     container.appendChild(resumenGrid);
 
+    // Filtrar trabajos según selección
+    const trabajosFiltrados = this.filtroNegocio 
+      ? todosTrabajos.filter(t => t.negocioId === this.filtroNegocio)
+      : todosTrabajos;
+
     // Lista de trabajos
     const listaSection = document.createElement('div');
     listaSection.className = 'trabajos-lista-section';
-    listaSection.innerHTML = '<h3 style="margin:1.5rem 0 .75rem; font-size:1rem">📋 Trabajos Recientes</h3>';
+    const negocioSeleccionado = this.filtroNegocio ? this.negocios.find(n => n.id === this.filtroNegocio) : null;
+    const tituloFiltro = negocioSeleccionado ? `${this.getIconoNegocio(negocioSeleccionado.nombre)} ${negocioSeleccionado.nombre}` : '🏢 Todos los Negocios';
+    listaSection.innerHTML = `<h3 style="margin:1.5rem 0 .75rem; font-size:1rem">📋 Trabajos Recientes - ${tituloFiltro}</h3>`;
     const lista = document.createElement('div');
     lista.className = 'trabajos-lista';
 
-    if (todosTrabajos.length === 0) {
+    if (trabajosFiltrados.length === 0) {
       lista.innerHTML = '<div class="lista-empty">No hay trabajos registrados</div>';
     } else {
-      todosTrabajos.slice(0,20).forEach(trabajo => {
+      trabajosFiltrados.slice(0,20).forEach(trabajo => {
         const item = document.createElement('div');
         item.className = `lista-item lista-item-${trabajo.estado}`;
         const clienteNombre = trabajo.cliente?.nombre || 'Cliente';
         const estadoLabel = {pendiente:'⏳ Pendiente', en_proceso:'▶️ En Proceso', completado:'✅ Completado', cancelado:'❌ Cancelado'}[trabajo.estado] || trabajo.estado;
         const fecha = new Date(trabajo.fechaCreacion);
         const fechaStr = fecha.toLocaleDateString('es-CR') + ' ' + fecha.toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'});
+        
+        // Calcular progreso para todos los estados
+        let progresoHTML = '';
+        
+        if (trabajo.estado === 'pendiente') {
+          // Pendiente: barra en 0% esperando
+          progresoHTML = `
+            <div class="lista-progreso progreso-pendiente">
+              <div class="progreso-info">
+                <span class="progreso-label">⏳ Esperando inicio</span>
+                <span class="progreso-porcentaje">0%</span>
+              </div>
+              <div class="progreso-barra">
+                <div class="progreso-fill progreso-fill-pendiente" style="width: 0%"></div>
+              </div>
+            </div>
+          `;
+        } else if (trabajo.estado === 'en_proceso') {
+          // En proceso: barra animada con tiempo real
+          const inicio = trabajo.fechaInicio ? new Date(trabajo.fechaInicio).getTime() : new Date(trabajo.fechaCreacion).getTime();
+          const ahora = Date.now();
+          const minutosTranscurridos = Math.floor((ahora - inicio) / 60000);
+          const tiempoEstimado = trabajo.tiempoEstimado || 30;
+          const porcentaje = Math.min(Math.round((minutosTranscurridos / tiempoEstimado) * 100), 100);
+          
+          progresoHTML = `
+            <div class="lista-progreso progreso-en-proceso">
+              <div class="progreso-info">
+                <span class="progreso-label">⏱️ ${minutosTranscurridos} min / ${tiempoEstimado} min</span>
+                <span class="progreso-porcentaje">${porcentaje}%</span>
+              </div>
+              <div class="progreso-barra">
+                <div class="progreso-fill progreso-fill-en-proceso" style="width: ${porcentaje}%"></div>
+              </div>
+            </div>
+          `;
+        } else if (trabajo.estado === 'completado') {
+          // Completado: barra en 100% verde
+          const inicio = trabajo.fechaInicio ? new Date(trabajo.fechaInicio).getTime() : new Date(trabajo.fechaCreacion).getTime();
+          const fin = trabajo.fechaCompletado ? new Date(trabajo.fechaCompletado).getTime() : Date.now();
+          const minutosTotal = Math.floor((fin - inicio) / 60000);
+          
+          progresoHTML = `
+            <div class="lista-progreso progreso-completado">
+              <div class="progreso-info">
+                <span class="progreso-label">✅ Completado en ${minutosTotal} min</span>
+                <span class="progreso-porcentaje">100%</span>
+              </div>
+              <div class="progreso-barra">
+                <div class="progreso-fill progreso-fill-completado" style="width: 100%"></div>
+              </div>
+            </div>
+          `;
+        }
         
         item.innerHTML = `
           <div class="lista-item-header">
@@ -397,6 +492,7 @@ const adminApp = {
           </div>
           <div class="lista-cliente">${clienteNombre}</div>
           <div class="lista-descripcion">${trabajo.descripcion || 'Sin descripción'}</div>
+          ${progresoHTML}
           <div class="lista-footer">
             <span class="lista-precio">${trabajo.precioEstimado ? '$'+parseFloat(trabajo.precioEstimado).toFixed(2) : 'Sin precio'}</span>
             <span class="lista-fecha">${fechaStr}</span>

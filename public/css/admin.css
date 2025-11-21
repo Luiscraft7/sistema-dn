@@ -254,8 +254,8 @@
 .lista-item {
   background: var(--bg-dark);
   border: 2px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
   transition: all 0.2s ease;
   cursor: pointer;
 }
@@ -297,17 +297,17 @@
 }
 
 .lista-cliente {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-light);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .lista-descripcion {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-gray);
-  margin-bottom: 0.75rem;
-  line-height: 1.4;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
 }
 
 .lista-footer {
@@ -338,60 +338,203 @@
   border: 2px dashed var(--border);
 }
 
+.lista-progreso {
+  margin: 0.5rem 0 0.4rem;
+  padding: 0.6rem;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 0.4rem;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.progreso-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.progreso-label {
+  color: var(--text-gray);
+  font-weight: 500;
+}
+
+.progreso-porcentaje {
+  color: var(--admin-primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.progreso-barra {
+  height: 6px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.progreso-fill {
+  height: 100%;
+  background: linear-gradient(90deg, 
+    var(--admin-primary) 0%, 
+    var(--admin-secondary) 50%, 
+    var(--admin-primary) 100%);
+  background-size: 200% 100%;
+  border-radius: 10px;
+  transition: width 0.5s ease;
+  animation: progressShine 2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  position: relative;
+}
+
+.progreso-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: progressGloss 1.5s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 0%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes progressGloss {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* Progress bar variants by state */
+.progreso-pendiente {
+  background: rgba(255, 193, 7, 0.05);
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.progreso-fill-pendiente {
+  background: linear-gradient(90deg, 
+    rgba(255, 193, 7, 0.3) 0%, 
+    rgba(255, 193, 7, 0.5) 100%);
+  animation: pendientePulse 2s ease-in-out infinite;
+}
+
+@keyframes pendientePulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.progreso-en-proceso {
+  background: rgba(99, 102, 241, 0.05);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.progreso-fill-en-proceso {
+  background: linear-gradient(90deg, 
+    var(--admin-primary) 0%, 
+    var(--admin-secondary) 50%, 
+    var(--admin-primary) 100%);
+  background-size: 200% 100%;
+  animation: progressShine 2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+.progreso-completado {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.progreso-fill-completado {
+  background: linear-gradient(90deg, 
+    #22c55e 0%, 
+    #16a34a 100%);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+  animation: completadoGlow 2s ease-in-out infinite;
+}
+
+@keyframes completadoGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 15px rgba(34, 197, 94, 0.6); }
+}
+
 .resumen-card {
   background: var(--bg-dark);
-  padding: 1.5rem;
-  border-radius: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
   border-left: 4px solid var(--admin-primary);
 }
 
 .resumen-card h3 {
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.75rem 0;
   color: var(--text-light);
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .resumen-stats {
   display: flex;
   justify-content: space-around;
+  gap: 0.5rem;
+}
 
-.resumen-card.clickable { cursor: pointer; transition: background .15s, border-color .15s; }
-.resumen-card.clickable:hover { background: rgba(255,255,255,0.05); border-color: var(--primary-color); }
+.resumen-card.filtro-card { 
+  cursor: pointer; 
+  transition: all 0.3s ease; 
+  position: relative;
+  overflow: hidden;
+}
+
+.resumen-card.filtro-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--admin-primary), var(--admin-secondary));
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.resumen-card.filtro-card:hover::before {
+  transform: scaleX(1);
+}
+
+.resumen-card.filtro-card:hover { 
+  background: rgba(255,255,255,0.05); 
+  border-left-color: var(--admin-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.resumen-card.filtro-card.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(129, 140, 248, 0.1));
+  border-left-color: var(--admin-primary);
+  border-left-width: 5px;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.resumen-card.filtro-card.active::before {
+  transform: scaleX(1);
+}
 .resumen-card h3 { display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
 .resumen-total { font-size:0.65rem; color:var(--text-gray); background: var(--border-color); padding:2px 6px; border-radius:8px; }
-
-.modal-detalle-negocio { max-width: 900px; width:95%; display:flex; flex-direction:column; }
-.detalle-negocio-tabs { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.75rem; }
-.detalle-tab { background: var(--card-bg); border:1px solid var(--border-color); color:var(--text-color); padding:.4rem .75rem; border-radius:8px; font-size:.75rem; cursor:pointer; }
-.detalle-tab.active { background: var(--primary-color); border-color: var(--primary-color); color:#fff; }
-.detalle-listado { display:flex; flex-direction:column; gap:.5rem; max-height:50vh; overflow-y:auto; padding-right:4px; }
-.detalle-item { background: var(--card-bg-alt); border:1px solid var(--border-color); border-radius:10px; padding:.6rem .75rem; display:flex; flex-direction:column; gap:.4rem; font-size:.75rem; }
-.detalle-head { display:flex; justify-content:space-between; align-items:center; }
-.detalle-cliente { font-weight:600; font-size:.8rem; }
-.detalle-estado { font-size:.6rem; text-transform:uppercase; letter-spacing:.5px; }
-.detalle-descripcion { font-size:.7rem; color: var(--text-gray); }
-.detalle-footer { display:flex; justify-content:space-between; font-size:.65rem; color:var(--text-gray); }
-.detalle-precio { color: var(--success-color); }
-.detalle-progreso { display:flex; align-items:center; gap:.5rem; }
-.detalle-progreso .barra { flex:1; height:6px; background: var(--border-color); border-radius:4px; overflow:hidden; }
-.detalle-progreso .fill { height:100%; background: linear-gradient(90deg, var(--primary-color), var(--info-color)); }
-.detalle-empty { text-align:center; padding:1.5rem; font-size:.75rem; color:var(--text-gray); }
 
 @media (max-width: 768px) {
   .tabs-nav { overflow-x:auto; }
   .resumen-card { min-width:220px; }
-  .trabajos-resumen { display:flex; overflow-x:auto; gap:.75rem; }
-  .modal-detalle-negocio { max-height:85vh; }
-  .detalle-listado { max-height:40vh; }
+  .trabajos-resumen-grid { display:flex; overflow-x:auto; gap:.75rem; }
 }
 
 @media (max-width: 480px) {
   .resumen-card h3 { font-size:.9rem; }
-  .detalle-item { font-size:.7rem; }
-  .detalle-cliente { font-size:.75rem; }
-  .detalle-progreso span { font-size:.6rem; }
-}
-  gap: 1rem;
 }
 
 .resumen-stat {
@@ -399,15 +542,15 @@
 }
 
 .resumen-stat-value {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: bold;
   color: var(--admin-primary);
 }
 
 .resumen-stat-label {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--text-gray);
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .resumen-stat-value.warning {
@@ -623,6 +766,23 @@
     align-items: flex-start;
     gap: 0.25rem;
     font-size: 0.7rem;
+  }
+
+  .lista-progreso {
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+  }
+
+  .progreso-info {
+    font-size: 0.7rem;
+  }
+
+  .progreso-porcentaje {
+    font-size: 0.8rem;
+  }
+
+  .progreso-barra {
+    height: 6px;
   }
 
   .modal-content {
