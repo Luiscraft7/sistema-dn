@@ -7,7 +7,10 @@ exports.getTrabajos = async (req, res) => {
     let query = `
       SELECT t.*, 
              c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.cedula as cliente_cedula,
-             n.nombre as negocio_nombre
+             n.nombre as negocio_nombre,
+             (SELECT h.fecha_hora FROM historial_estados h 
+              WHERE h.trabajo_id = t.id AND h.estado = 'en_proceso' 
+              ORDER BY h.fecha_hora ASC LIMIT 1) as fecha_inicio
       FROM trabajos t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN negocios n ON t.negocio_id = n.id
@@ -49,8 +52,10 @@ exports.getTrabajos = async (req, res) => {
       estado: t.estado_actual,
       estadoActual: t.estado_actual,
       fechaCreacion: t.fecha_creacion,
+      fechaInicio: t.fecha_inicio,
       fechaFinalizacion: t.fecha_finalizacion,
       fechaCompletado: t.fecha_finalizacion,
+      tiempoEstimado: 30,
       cliente: {
         id: t.cliente_id,
         nombre: t.cliente_nombre,
@@ -97,7 +102,10 @@ exports.createTrabajo = async (req, res) => {
     const trabajo = await db.getAsync(`
       SELECT t.*, 
              c.nombre as cliente_nombre, c.telefono as cliente_telefono,
-             n.nombre as negocio_nombre
+             n.nombre as negocio_nombre,
+             (SELECT h.fecha_hora FROM historial_estados h 
+              WHERE h.trabajo_id = t.id AND h.estado = 'en_proceso' 
+              ORDER BY h.fecha_hora ASC LIMIT 1) as fecha_inicio
       FROM trabajos t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN negocios n ON t.negocio_id = n.id
@@ -113,8 +121,10 @@ exports.createTrabajo = async (req, res) => {
       estado: trabajo.estado_actual,
       estadoActual: trabajo.estado_actual,
       fechaCreacion: trabajo.fecha_creacion,
+      fechaInicio: trabajo.fecha_inicio,
       fechaFinalizacion: trabajo.fecha_finalizacion,
       fechaCompletado: trabajo.fecha_finalizacion,
+      tiempoEstimado: 30,
       cliente: {
         id: trabajo.cliente_id,
         nombre: trabajo.cliente_nombre,
@@ -236,8 +246,10 @@ exports.updateEstado = async (req, res) => {
       estado: trabajo.estado_actual,
       estadoActual: trabajo.estado_actual,
       fechaCreacion: trabajo.fecha_creacion,
+      fechaInicio: trabajo.fecha_inicio,
       fechaFinalizacion: trabajo.fecha_finalizacion,
       fechaCompletado: trabajo.fecha_finalizacion,
+      tiempoEstimado: 30,
       cliente: {
         id: trabajo.cliente_id,
         nombre: trabajo.cliente_nombre,

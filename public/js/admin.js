@@ -431,16 +431,19 @@ const adminApp = {
         const fecha = new Date(trabajo.fechaCreacion);
         const fechaStr = fecha.toLocaleDateString('es-CR') + ' ' + fecha.toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'});
         
-        // Calcular progreso para todos los estados
+        // Calcular progreso según estado
         let progresoHTML = '';
         
         if (trabajo.estado === 'pendiente') {
-          // Pendiente: barra en 0% esperando
+          // Pendiente: 0% - esperando
+          const fechaCreacion = new Date(trabajo.fechaCreacion);
+          const horaCreacion = fechaCreacion.toLocaleTimeString('es-CR', {hour: '2-digit', minute: '2-digit'});
+          
           progresoHTML = `
             <div class="lista-progreso progreso-pendiente">
               <div class="progreso-info">
-                <span class="progreso-label">⏳ Esperando inicio</span>
-                <span class="progreso-porcentaje">0%</span>
+                <span class="progreso-label">⏳ Esperando inicio desde ${horaCreacion}</span>
+                <span class="progreso-estado">Pendiente</span>
               </div>
               <div class="progreso-barra">
                 <div class="progreso-fill progreso-fill-pendiente" style="width: 0%"></div>
@@ -448,34 +451,29 @@ const adminApp = {
             </div>
           `;
         } else if (trabajo.estado === 'en_proceso') {
-          // En proceso: barra animada con tiempo real
-          const inicio = trabajo.fechaInicio ? new Date(trabajo.fechaInicio).getTime() : new Date(trabajo.fechaCreacion).getTime();
-          const ahora = Date.now();
-          const minutosTranscurridos = Math.floor((ahora - inicio) / 60000);
-          const tiempoEstimado = trabajo.tiempoEstimado || 30;
-          const porcentaje = Math.min(Math.round((minutosTranscurridos / tiempoEstimado) * 100), 100);
+          // En proceso: 50% - trabajando
+          const inicio = trabajo.fechaInicio ? new Date(trabajo.fechaInicio) : new Date(trabajo.fechaCreacion);
+          const horaInicio = inicio.toLocaleTimeString('es-CR', {hour: '2-digit', minute: '2-digit'});
           
           progresoHTML = `
             <div class="lista-progreso progreso-en-proceso">
               <div class="progreso-info">
-                <span class="progreso-label">⏱️ ${minutosTranscurridos} min / ${tiempoEstimado} min</span>
-                <span class="progreso-porcentaje">${porcentaje}%</span>
+                <span class="progreso-label">▶️ En progreso desde ${horaInicio}</span>
+                <span class="progreso-porcentaje">50%</span>
               </div>
               <div class="progreso-barra">
-                <div class="progreso-fill progreso-fill-en-proceso" style="width: ${porcentaje}%"></div>
+                <div class="progreso-fill progreso-fill-en-proceso" style="width: 50%"></div>
               </div>
             </div>
           `;
         } else if (trabajo.estado === 'completado') {
-          // Completado: barra en 100% verde
-          const inicio = trabajo.fechaInicio ? new Date(trabajo.fechaInicio).getTime() : new Date(trabajo.fechaCreacion).getTime();
-          const fin = trabajo.fechaCompletado ? new Date(trabajo.fechaCompletado).getTime() : Date.now();
-          const minutosTotal = Math.floor((fin - inicio) / 60000);
+          // Completado: 100% - terminado
+          const horaFin = trabajo.fechaCompletado ? new Date(trabajo.fechaCompletado).toLocaleTimeString('es-CR', {hour: '2-digit', minute: '2-digit'}) : '';
           
           progresoHTML = `
             <div class="lista-progreso progreso-completado">
               <div class="progreso-info">
-                <span class="progreso-label">✅ Completado en ${minutosTotal} min</span>
+                <span class="progreso-label">✅ Terminado ${horaFin ? 'a las ' + horaFin : ''}</span>
                 <span class="progreso-porcentaje">100%</span>
               </div>
               <div class="progreso-barra">
