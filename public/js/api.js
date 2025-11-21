@@ -1,9 +1,20 @@
 // API utilities
 const API_URL = '/api';
 
-const getToken = () => localStorage.getItem('token');
-const setToken = (token) => localStorage.setItem('token', token);
-const removeToken = () => localStorage.removeItem('token');
+// Generar un ID único para esta pestaña/sesión
+const getTabId = () => {
+  let tabId = sessionStorage.getItem('tabId');
+  if (!tabId) {
+    tabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionStorage.setItem('tabId', tabId);
+  }
+  return tabId;
+};
+
+// Usar sessionStorage en lugar de localStorage para sesiones independientes por pestaña
+const getToken = () => sessionStorage.getItem('token');
+const setToken = (token) => sessionStorage.setItem('token', token);
+const removeToken = () => sessionStorage.removeItem('token');
 
 const getAuthHeaders = () => {
   const token = getToken();

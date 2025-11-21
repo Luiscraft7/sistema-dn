@@ -66,8 +66,8 @@ function renderNavbar() {
 }
 
 function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  API.removeToken();
+  sessionStorage.removeItem('user');
   window.location.href = '/login.html';
 }
 

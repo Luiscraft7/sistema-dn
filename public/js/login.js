@@ -35,9 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await API.auth.login(username, password);
       
       if (response.token) {
-        // Login exitoso
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // Login exitoso - usar API.setToken para sessionStorage
+        API.setToken(response.token);
+        sessionStorage.setItem('user', JSON.stringify(response.user));
         
         // Redirigir al dashboard
         window.location.href = '/dashboard.html';
