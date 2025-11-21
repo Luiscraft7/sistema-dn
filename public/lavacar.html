@@ -50,18 +50,24 @@
     </div>
 
     <!-- Lista de trabajos -->
+    <div id="mobileStateSelector" class="mobile-state-selector" style="display: none;">
+      <button class="mobile-state-btn pendiente active" data-state="pendiente">🔴 Pendientes</button>
+      <button class="mobile-state-btn en_proceso" data-state="en_proceso">🔵 En Proceso</button>
+      <button class="mobile-state-btn completado" data-state="completado">🟢 Completados</button>
+    </div>
+
     <div class="trabajos-container">
-      <div class="trabajos-section card">
+      <div class="trabajos-section trabajos-column card active" data-state="pendiente">
         <h3>🔴 Pendientes</h3>
         <div id="trabajosPendientes" class="trabajos-list"></div>
       </div>
 
-      <div class="trabajos-section card">
+      <div class="trabajos-section trabajos-column card" data-state="en_proceso">
         <h3>🔵 En Proceso</h3>
         <div id="trabajosEnProceso" class="trabajos-list"></div>
       </div>
 
-      <div class="trabajos-section card">
+      <div class="trabajos-section trabajos-column card" data-state="completado">
         <h3>🟢 Completados</h3>
         <div id="trabajosCompletados" class="trabajos-list"></div>
       </div>

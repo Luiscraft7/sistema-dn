@@ -397,3 +397,96 @@ body {
 .gap-1 {
   gap: 1rem;
 }
+
+/* Mobile Single Card View */
+@media (max-width: 768px) {
+  .trabajos-container.mobile-single-view {
+    position: relative;
+  }
+
+  .trabajos-container.mobile-single-view .trabajos-column {
+    display: none;
+  }
+
+  .trabajos-container.mobile-single-view .trabajos-column.active {
+    display: block;
+    width: 100%;
+  }
+
+  /* Mobile state selector */
+  .mobile-state-selector {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background: var(--bg-card);
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .mobile-state-btn {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    background: transparent;
+    border: 2px solid transparent;
+    color: var(--text-gray);
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .mobile-state-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .mobile-state-btn.pendiente.active {
+    background: var(--warning);
+    border-color: var(--warning);
+  }
+
+  .mobile-state-btn.en_proceso.active {
+    background: var(--info);
+    border-color: var(--info);
+  }
+
+  .mobile-state-btn.completado.active {
+    background: var(--success);
+    border-color: var(--success);
+  }
+
+  .mobile-state-btn:not(.active):hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border);
+  }
+
+  /* Smooth transitions for card switching */
+  .trabajos-column {
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Desktop: hide mobile controls */
+@media (min-width: 769px) {
+  .mobile-state-selector {
+    display: none;
+  }
+}

@@ -67,6 +67,56 @@ const cabinasApp = {
       this.loadTrabajos()
     ]);
     this.updateStats();
+    this.checkMobileView();
+  },
+
+  checkMobileView() {
+    const isMobile = window.innerWidth <= 768;
+    const container = document.querySelector('.trabajos-container');
+    const selector = document.getElementById('mobileStateSelector');
+    
+    if (container) {
+      if (isMobile) {
+        container.classList.add('mobile-single-view');
+        if (selector) selector.style.display = 'flex';
+        this.setupMobileNavigation();
+      } else {
+        container.classList.remove('mobile-single-view');
+        if (selector) selector.style.display = 'none';
+        // Mostrar todas las columnas en desktop
+        document.querySelectorAll('.trabajos-column').forEach(col => {
+          col.classList.remove('active');
+        });
+      }
+    }
+  },
+
+  setupMobileNavigation() {
+    const buttons = document.querySelectorAll('.mobile-state-btn');
+    const columns = document.querySelectorAll('.trabajos-column');
+
+    buttons.forEach(btn => {
+      btn.replaceWith(btn.cloneNode(true)); // Remove old listeners
+    });
+
+    document.querySelectorAll('.mobile-state-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const state = btn.dataset.state;
+        
+        // Update buttons
+        document.querySelectorAll('.mobile-state-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Update columns
+        columns.forEach(col => {
+          if (col.dataset.state === state) {
+            col.classList.add('active');
+          } else {
+            col.classList.remove('active');
+          }
+        });
+      });
+    });
   },
 
   async loadClientes() {
@@ -92,6 +142,11 @@ const cabinasApp = {
 
   renderClientesSelect() {
     const select = document.getElementById('trabajoCliente');
+    if (!select) return;
+    
+    // Guardar valor seleccionado actual
+    const currentValue = select.value;
+    
     select.innerHTML = '<option value="">Seleccionar cliente</option>';
     
     this.clientes.forEach(cliente => {
@@ -100,6 +155,11 @@ const cabinasApp = {
       option.textContent = cliente.nombre;
       select.appendChild(option);
     });
+    
+    // Restaurar valor seleccionado si existe
+    if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+      select.value = currentValue;
+    }
   },
 
   renderTrabajos() {
@@ -363,4 +423,15 @@ window.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal')) {
     e.target.style.display = 'none';
   }
+});
+
+// Detectar cambios de tamaño/orientación
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (cabinasApp.checkMobileView) {
+      cabinasApp.checkMobileView();
+    }
+  }, 250);
 });
