@@ -234,10 +234,108 @@
 }
 
 /* Trabajos Resumen */
-.trabajos-resumen {
+.trabajos-resumen-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.trabajos-lista-section {
+  margin-top: 1.5rem;
+}
+
+.trabajos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lista-item {
+  background: var(--bg-dark);
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.lista-item:hover {
+  border-color: var(--admin-primary);
+  transform: translateX(4px);
+  box-shadow: -4px 0 12px rgba(99, 102, 241, 0.2);
+}
+
+.lista-item-pendiente { border-left: 4px solid var(--warning); }
+.lista-item-en_proceso { border-left: 4px solid var(--primary); }
+.lista-item-completado { border-left: 4px solid var(--success); opacity: 0.8; }
+.lista-item-cancelado { border-left: 4px solid var(--danger); opacity: 0.6; }
+
+.lista-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.lista-negocio {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--admin-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lista-estado {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  background: var(--bg-card);
+  color: var(--text-gray);
+  font-weight: 500;
+}
+
+.lista-cliente {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 0.5rem;
+}
+
+.lista-descripcion {
+  font-size: 0.9rem;
+  color: var(--text-gray);
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.lista-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-gray);
+}
+
+.lista-precio {
+  font-weight: 600;
+  color: var(--success);
+}
+
+.lista-fecha {
+  color: var(--text-gray);
+  opacity: 0.8;
+}
+
+.lista-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-gray);
+  font-size: 0.9rem;
+  background: var(--bg-dark);
+  border-radius: 0.75rem;
+  border: 2px dashed var(--border);
 }
 
 .resumen-card {
@@ -256,6 +354,43 @@
 .resumen-stats {
   display: flex;
   justify-content: space-around;
+
+.resumen-card.clickable { cursor: pointer; transition: background .15s, border-color .15s; }
+.resumen-card.clickable:hover { background: rgba(255,255,255,0.05); border-color: var(--primary-color); }
+.resumen-card h3 { display:flex; justify-content:space-between; align-items:center; font-size:1rem; }
+.resumen-total { font-size:0.65rem; color:var(--text-gray); background: var(--border-color); padding:2px 6px; border-radius:8px; }
+
+.modal-detalle-negocio { max-width: 900px; width:95%; display:flex; flex-direction:column; }
+.detalle-negocio-tabs { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.75rem; }
+.detalle-tab { background: var(--card-bg); border:1px solid var(--border-color); color:var(--text-color); padding:.4rem .75rem; border-radius:8px; font-size:.75rem; cursor:pointer; }
+.detalle-tab.active { background: var(--primary-color); border-color: var(--primary-color); color:#fff; }
+.detalle-listado { display:flex; flex-direction:column; gap:.5rem; max-height:50vh; overflow-y:auto; padding-right:4px; }
+.detalle-item { background: var(--card-bg-alt); border:1px solid var(--border-color); border-radius:10px; padding:.6rem .75rem; display:flex; flex-direction:column; gap:.4rem; font-size:.75rem; }
+.detalle-head { display:flex; justify-content:space-between; align-items:center; }
+.detalle-cliente { font-weight:600; font-size:.8rem; }
+.detalle-estado { font-size:.6rem; text-transform:uppercase; letter-spacing:.5px; }
+.detalle-descripcion { font-size:.7rem; color: var(--text-gray); }
+.detalle-footer { display:flex; justify-content:space-between; font-size:.65rem; color:var(--text-gray); }
+.detalle-precio { color: var(--success-color); }
+.detalle-progreso { display:flex; align-items:center; gap:.5rem; }
+.detalle-progreso .barra { flex:1; height:6px; background: var(--border-color); border-radius:4px; overflow:hidden; }
+.detalle-progreso .fill { height:100%; background: linear-gradient(90deg, var(--primary-color), var(--info-color)); }
+.detalle-empty { text-align:center; padding:1.5rem; font-size:.75rem; color:var(--text-gray); }
+
+@media (max-width: 768px) {
+  .tabs-nav { overflow-x:auto; }
+  .resumen-card { min-width:220px; }
+  .trabajos-resumen { display:flex; overflow-x:auto; gap:.75rem; }
+  .modal-detalle-negocio { max-height:85vh; }
+  .detalle-listado { max-height:40vh; }
+}
+
+@media (max-width: 480px) {
+  .resumen-card h3 { font-size:.9rem; }
+  .detalle-item { font-size:.7rem; }
+  .detalle-cliente { font-size:.75rem; }
+  .detalle-progreso span { font-size:.6rem; }
+}
   gap: 1rem;
 }
 
@@ -359,8 +494,24 @@
     grid-template-columns: 1fr;
   }
 
-  .trabajos-resumen {
+  .trabajos-resumen-grid {
     grid-template-columns: 1fr;
+  }
+
+  .lista-item {
+    padding: 0.75rem;
+  }
+
+  .lista-cliente {
+    font-size: 1rem;
+  }
+
+  .lista-descripcion {
+    font-size: 0.85rem;
+  }
+
+  .lista-footer {
+    font-size: 0.75rem;
   }
 
   .section-header {
@@ -439,6 +590,39 @@
 
   .resumen-stats {
     flex-direction: column;
+  }
+
+  .lista-item {
+    padding: 0.65rem;
+  }
+
+  .lista-item-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .lista-negocio {
+    font-size: 0.8rem;
+  }
+
+  .lista-estado {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .lista-cliente {
+    font-size: 0.95rem;
+  }
+
+  .lista-descripcion {
+    font-size: 0.8rem;
+  }
+
+  .lista-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    font-size: 0.7rem;
   }
 
   .modal-content {

@@ -320,6 +320,26 @@ const adminApp = {
     const container = document.getElementById('trabajosResumen');
     container.innerHTML = '';
 
+    // Recopilar todos los trabajos con información del negocio
+    const todosTrabajos = [];
+    this.trabajos.forEach(trabajo => {
+      const negocio = this.negocios.find(n => n.id === trabajo.negocioId);
+      if (negocio) {
+        todosTrabajos.push({...trabajo, negocioNombre: negocio.nombre, negocioIcono: this.getIconoNegocio(negocio.nombre)});
+      }
+    });
+
+    // Ordenar: primero en_proceso, luego pendiente, luego completado, por fecha
+    todosTrabajos.sort((a,b) => {
+      const order = {en_proceso:1, pendiente:2, completado:3};
+      const diffEstado = (order[a.estado]||999) - (order[b.estado]||999);
+      if (diffEstado !== 0) return diffEstado;
+      return new Date(b.fechaCreacion) - new Date(a.fechaCreacion);
+    });
+
+    // Resumen por negocio (tarjetas superiores)
+    const resumenGrid = document.createElement('div');
+    resumenGrid.className = 'trabajos-resumen-grid';
     this.negocios.forEach(negocio => {
       const trabajosNegocio = this.trabajos.filter(t => t.negocioId === negocio.id);
       const pendientes = trabajosNegocio.filter(t => t.estado === 'pendiente').length;
@@ -327,9 +347,11 @@ const adminApp = {
       const completados = trabajosNegocio.filter(t => t.estado === 'completado').length;
 
       const card = document.createElement('div');
-      card.className = 'resumen-card';
+      card.className = 'resumen-card clickable';
+      card.setAttribute('data-negocio-id', negocio.id);
+      card.setAttribute('data-negocio-nombre', negocio.nombre);
       card.innerHTML = `
-        <h3>${negocio.nombre}</h3>
+        <h3>${negocio.nombre} <span class="resumen-total">${trabajosNegocio.length} trabajos</span></h3>
         <div class="resumen-stats">
           <div class="resumen-stat">
             <div class="resumen-stat-value warning">${pendientes}</div>
@@ -345,7 +367,121 @@ const adminApp = {
           </div>
         </div>
       `;
-      container.appendChild(card);
+      card.addEventListener('click', () => this.abrirDetalleNegocio(negocio.id));
+      resumenGrid.appendChild(card);
+    });
+    container.appendChild(resumenGrid);
+
+    // Lista de trabajos
+    const listaSection = document.createElement('div');
+    listaSection.className = 'trabajos-lista-section';
+    listaSection.innerHTML = '<h3 style="margin:1.5rem 0 .75rem; font-size:1rem">📋 Trabajos Recientes</h3>';
+    const lista = document.createElement('div');
+    lista.className = 'trabajos-lista';
+
+    if (todosTrabajos.length === 0) {
+      lista.innerHTML = '<div class="lista-empty">No hay trabajos registrados</div>';
+    } else {
+      todosTrabajos.slice(0,20).forEach(trabajo => {
+        const item = document.createElement('div');
+        item.className = `lista-item lista-item-${trabajo.estado}`;
+        const clienteNombre = trabajo.cliente?.nombre || 'Cliente';
+        const estadoLabel = {pendiente:'⏳ Pendiente', en_proceso:'▶️ En Proceso', completado:'✅ Completado', cancelado:'❌ Cancelado'}[trabajo.estado] || trabajo.estado;
+        const fecha = new Date(trabajo.fechaCreacion);
+        const fechaStr = fecha.toLocaleDateString('es-CR') + ' ' + fecha.toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'});
+        
+        item.innerHTML = `
+          <div class="lista-item-header">
+            <div class="lista-negocio">${trabajo.negocioIcono} ${trabajo.negocioNombre}</div>
+            <div class="lista-estado">${estadoLabel}</div>
+          </div>
+          <div class="lista-cliente">${clienteNombre}</div>
+          <div class="lista-descripcion">${trabajo.descripcion || 'Sin descripción'}</div>
+          <div class="lista-footer">
+            <span class="lista-precio">${trabajo.precioEstimado ? '$'+parseFloat(trabajo.precioEstimado).toFixed(2) : 'Sin precio'}</span>
+            <span class="lista-fecha">${fechaStr}</span>
+          </div>
+        `;
+        lista.appendChild(item);
+      });
+    }
+    listaSection.appendChild(lista);
+    container.appendChild(listaSection);
+  },
+
+  getIconoNegocio(nombre) {
+    return {'Cabinas':'🖥️','Impresión':'🖨️','Lavacar':'🚗'}[nombre] || '🏢';
+  },
+
+  abrirDetalleNegocio(negocioId) {
+    const negocio = this.negocios.find(n => n.id === negocioId);
+    if (!negocio) return;
+    document.getElementById('detalleNegocioTitulo').textContent = `📂 ${negocio.nombre}`;
+    this.detalleNegocioId = negocioId;
+    this.estadoDetalleActivo = 'en_proceso';
+    this.renderDetalleNegocio();
+    this.showModal('detalleNegocio');
+    // Tabs eventos
+    document.querySelectorAll('#modalDetalleNegocio .detalle-tab').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#modalDetalleNegocio .detalle-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.estadoDetalleActivo = btn.getAttribute('data-estado');
+        this.renderDetalleNegocio();
+      };
+    });
+  },
+
+  renderDetalleNegocio() {
+    const listado = document.getElementById('detalleListado');
+    listado.innerHTML = '';
+    const trabajosNegocio = this.trabajos.filter(t => t.negocioId === this.detalleNegocioId);
+    const filtrados = trabajosNegocio.filter(t => this.estadoDetalleActivo === 'completado' ? t.estado === 'completado' : t.estado === this.estadoDetalleActivo);
+
+    // Resumen counts
+    const pendientes = trabajosNegocio.filter(t => t.estado === 'pendiente').length;
+    const enProceso = trabajosNegocio.filter(t => t.estado === 'en_proceso').length;
+    const completados = trabajosNegocio.filter(t => t.estado === 'completado').length;
+    document.getElementById('detalleResumenCounts').textContent = `Pendientes: ${pendientes} | En Proceso: ${enProceso} | Completados: ${completados}`;
+
+    if (filtrados.length === 0) {
+      listado.innerHTML = '<div class="detalle-empty">No hay trabajos en esta categoría</div>';
+      return;
+    }
+
+    filtrados.forEach(trabajo => {
+      const clienteNombre = trabajo.cliente?.nombre || 'Cliente';
+      const card = document.createElement('div');
+      card.className = 'detalle-item';
+
+      let meta = '';
+      if (trabajo.estado === 'en_proceso') {
+        const inicio = trabajo.fechaCreacion ? new Date(trabajo.fechaCreacion) : null;
+        if (inicio) {
+          const mins = Math.floor((Date.now() - inicio.getTime()) / 60000);
+          meta = `<div class="detalle-progreso"><div class="barra"><div class="fill" style="width:${Math.min(100, mins)}%"></div></div><span>${mins} min</span></div>`;
+        }
+      }
+      if (trabajo.estado === 'completado') {
+        meta = `<span class="badge badge-success">Finalizado</span>`;
+      }
+      if (trabajo.estado === 'pendiente') {
+        meta = `<span class="badge badge-warning">Pendiente</span>`;
+      }
+
+      card.innerHTML = `
+        <div class="detalle-head">
+          <div class="detalle-cliente">${clienteNombre}</div>
+          <div class="detalle-estado ${trabajo.estado}">${trabajo.estado.replace('_',' ')}</div>
+        </div>
+        <div class="detalle-descripcion">${trabajo.descripcion || 'Sin descripción'}</div>
+        ${meta}
+        <div class="detalle-footer">
+          <span class="detalle-precio">${trabajo.precioEstimado ? '$'+parseFloat(trabajo.precioEstimado).toFixed(2) : 'Sin precio'}</span>
+          <span class="detalle-fecha">${new Date(trabajo.fechaCreacion).toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+      `;
+      listado.appendChild(card);
     });
   },
 
