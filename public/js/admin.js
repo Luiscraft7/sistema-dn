@@ -67,8 +67,16 @@ const adminApp = {
     // Setup event listeners
     this.setupEventListeners();
 
-    // Iniciar polling
-    this.startPolling();
+    // Conectar WebSocket para actualizaciones en tiempo real
+    this.setupWebSocket();
+
+    // Fallback: polling solo si WebSocket falla
+    setTimeout(() => {
+      if (!window.SocketClient || !window.SocketClient.isConnected()) {
+        console.log('⚠️ WebSocket no disponible, usando polling como fallback');
+        this.startPolling();
+      }
+    }, 2000);
   },
 
   async loadAll() {
@@ -826,6 +834,69 @@ const adminApp = {
     }
   },
 
+  setupWebSocket() {
+    if (!window.SocketClient) {
+      console.warn('⚠️ Socket.io client no disponible');
+      return;
+    }
+
+    const token = API.getToken();
+    if (!token) return;
+
+    // Conectar WebSocket
+    window.SocketClient.connect(token);
+
+    // Escuchar eventos de trabajos en tiempo real
+    this.cleanupWebSocket = window.SocketClient.listenToTrabajos({
+      onCreated: (trabajo) => {
+        console.log('🆕 Nuevo trabajo en tiempo real:', trabajo);
+        this.trabajos.unshift(trabajo);
+        this.updateStats();
+        this.renderTrabajosResumen();
+        this.showNotification(`Nuevo trabajo: ${trabajo.cliente?.nombre || 'Cliente'}`, 'success');
+      },
+      onUpdated: (trabajo) => {
+        console.log('🔄 Trabajo actualizado en tiempo real:', trabajo);
+        const index = this.trabajos.findIndex(t => t.id === trabajo.id);
+        if (index !== -1) {
+          this.trabajos[index] = trabajo;
+        } else {
+          this.trabajos.unshift(trabajo);
+        }
+        this.updateStats();
+        this.renderTrabajosResumen();
+        this.showNotification(`Trabajo actualizado: ${trabajo.cliente?.nombre || 'Cliente'}`, 'info');
+      }
+    });
+  },
+
+  showNotification(message, type = 'info') {
+    // Crear notificación visual simple
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      padding: 1rem 1.5rem;
+      background: ${type === 'success' ? '#22c55e' : type === 'info' ? '#6366f1' : '#f59e0b'};
+      color: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+      font-weight: 500;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  },
+
   startPolling() {
     this.pollingInterval = setInterval(async () => {
       await this.loadAll();
@@ -835,6 +906,16 @@ const adminApp = {
   stopPolling() {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
+    }
+  },
+
+  cleanup() {
+    this.stopPolling();
+    if (this.cleanupWebSocket) {
+      this.cleanupWebSocket();
+    }
+    if (window.SocketClient) {
+      window.SocketClient.disconnect();
     }
   }
 };

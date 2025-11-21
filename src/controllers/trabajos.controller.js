@@ -112,7 +112,7 @@ exports.createTrabajo = async (req, res) => {
       WHERE t.id = ?
     `, [result.lastID]);
 
-    res.status(201).json({
+    const response = {
       id: trabajo.id,
       negocioId: trabajo.negocio_id,
       clienteId: trabajo.cliente_id,
@@ -134,7 +134,15 @@ exports.createTrabajo = async (req, res) => {
         id: trabajo.negocio_id,
         nombre: trabajo.negocio_nombre
       }
-    });
+    };
+
+    // Emitir evento WebSocket a admins y negocio específico
+    if (global.io) {
+      global.io.to('admins').emit('trabajo:creado', response);
+      global.io.to(`negocio_${trabajo.negocio_id}`).emit('trabajo:creado', response);
+    }
+
+    res.status(201).json(response);
   } catch (error) {
     console.error('Error al crear trabajo:', error);
     res.status(500).json({ error: 'Error al crear trabajo' });
@@ -237,7 +245,7 @@ exports.updateEstado = async (req, res) => {
       [parseInt(id)]
     );
 
-    res.json({
+    const response = {
       id: trabajo.id,
       negocioId: trabajo.negocio_id,
       clienteId: trabajo.cliente_id,
@@ -259,7 +267,15 @@ exports.updateEstado = async (req, res) => {
         id: trabajo.negocio_id,
         nombre: trabajo.negocio_nombre
       }
-    });
+    };
+
+    // Emitir evento WebSocket a admins y negocio específico
+    if (global.io) {
+      global.io.to('admins').emit('trabajo:actualizado', response);
+      global.io.to(`negocio_${trabajo.negocio_id}`).emit('trabajo:actualizado', response);
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Error al actualizar estado:', error);
     res.status(500).json({ error: 'Error al actualizar estado' });

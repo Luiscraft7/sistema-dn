@@ -281,6 +281,11 @@
     </div>
   </div>
 
+  <!-- Socket.io Client (servido por el servidor de Socket.io) -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Fallback: intenta cargar cliente si por alguna razón no se sirvió inicialmente -->
+  <script src="/js/socket-fallback.js"></script>
+  <script src="/js/socket.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/admin.js"></script>
 </body>

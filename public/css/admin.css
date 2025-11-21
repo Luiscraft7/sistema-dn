@@ -833,3 +833,38 @@
     padding: 0.5rem;
   }
 }
+
+/* Notificaciones en tiempo real */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.notification {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .notification {
+    right: 10px !important;
+    left: 10px !important;
+    font-size: 0.85rem;
+  }
+}

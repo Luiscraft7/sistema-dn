@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const authRoutes = require('./src/routes/auth.routes');
@@ -10,7 +13,17 @@ const trabajosRoutes = require('./src/routes/trabajos.routes');
 const usuariosRoutes = require('./src/routes/usuarios.routes');
 
 const app = express();
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
 const PORT = process.env.PORT || 3000;
+
+// Hacer io disponible globalmente
+global.io = io;
 
 // Middlewares
 app.use(cors());
@@ -46,10 +59,47 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📊 API disponible en http://localhost:${PORT}/api`);
+// Socket.io - Middleware de autenticación
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  
+  if (!token) {
+    return next(new Error('Authentication error'));
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'tu-secreto-jwt-super-seguro');
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
 });
 
-module.exports = app;
+// Socket.io - Manejar conexiones
+io.on('connection', (socket) => {
+  console.log(`✅ Usuario conectado: ${socket.user.usuario} (${socket.user.rol})`);
+  
+  // Usuario se une a sala de su negocio
+  if (socket.user.negocioId) {
+    socket.join(`negocio_${socket.user.negocioId}`);
+  }
+  
+  // Admins se unen a sala general
+  if (socket.user.rol === 'dueno' || socket.user.rol === 'dueño') {
+    socket.join('admins');
+  }
+  
+  socket.on('disconnect', () => {
+    console.log(`❌ Usuario desconectado: ${socket.user.usuario}`);
+  });
+});
+
+// Iniciar servidor
+httpServer.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`📊 API disponible en http://localhost:${PORT}/api`);
+  console.log(`🔌 WebSocket habilitado para tiempo real`);
+});
+
+module.exports = { app, io };
