@@ -50,15 +50,8 @@
         const negocio = negocios.find(n => n.id === userData.negocioId);
         
         if (negocio) {
-          if (negocio.nombre === 'Cabinas') {
-            window.location.href = '/trabajo.html';
-        } else if (negocioData.nombre === 'Impresión') {
-            window.location.href = '/trabajo.html';
-        } else if (negocioData.nombre === 'Lavacar') {
-            window.location.href = '/trabajo.html';
-          } else {
-            window.location.href = '/admin.html';
-          }
+          // Todos los trabajadores van al módulo unificado
+          window.location.href = '/trabajo.html';
         } else {
           alert('No tienes un negocio asignado');
           window.location.href = '/login.html';
