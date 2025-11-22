@@ -1,20 +1,45 @@
-// Impresion App
-const impresionApp = {
+// Trabajo App - Módulo Unificado Inteligente
+const trabajoApp = {
   negocioId: null,
+  negocioTipo: null, // 'Cabinas', 'Lavacar', 'Impresión'
+  negocioNombre: null,
   negocios: [],
   clientes: [],
   trabajos: [],
   pollingInterval: null,
   plantillas: [],
+  config: {
+    iconos: {
+      'Cabinas': '💻',
+      'Lavacar': '🚗',
+      'Impresión': '🖨️'
+    },
+    titulos: {
+      'Cabinas': {
+        nuevo: 'Nueva Sesión',
+        enProceso: '💻 Sesiones Activas',
+        labelPrecio: 'Precio por Hora'
+      },
+      'Lavacar': {
+        nuevo: 'Nuevo Lavado',
+        enProceso: '🚗 Lavados Activos',
+        labelPrecio: 'Precio Estimado'
+      },
+      'Impresión': {
+        nuevo: 'Nuevo Trabajo',
+        enProceso: '🖨️ Imprimiendo',
+        labelPrecio: 'Precio Estimado'
+      }
+    }
+  },
 
   async init() {
-    // Verificar token
+    // Verificar autenticación
     if (!API.checkAuth()) {
       window.location.href = '/login.html';
       return;
     }
 
-    // Verificar con servidor
     const userData = await API.verifyAuth();
     if (!userData) {
       window.location.href = '/login.html';
@@ -25,36 +50,79 @@ const impresionApp = {
     document.getElementById('navbarUser').textContent = userData.nombreCompleto || userData.usuario;
     document.getElementById('navbarRole').textContent = (userData.rol === 'dueno' || userData.rol === 'dueño') ? 'Dueño' : 'Trabajador';
 
-    // Buscar el negocio Impresión
+    // Cargar negocios
     await this.loadNegocios();
-    const impresion = this.negocios.find(n => n.nombre === 'Impresión');
-    
-    if (!impresion) {
-      alert('No se encontró el negocio Impresión');
+
+    // Detectar negocio del usuario
+    if (userData.negocioId) {
+      const negocio = this.negocios.find(n => n.id === userData.negocioId);
+      if (negocio) {
+        this.negocioId = negocio.id;
+        this.negocioTipo = negocio.nombre;
+        this.negocioNombre = negocio.nombre;
+        document.getElementById('navbarNegocio').textContent = negocio.nombre;
+      } else {
+        alert('No se encontró el negocio asignado');
+        window.location.href = '/login.html';
+        return;
+      }
+    } else {
+      alert('Usuario sin negocio asignado');
       window.location.href = '/login.html';
       return;
     }
 
-    this.negocioId = impresion.id;
+    // Personalizar interfaz según tipo de negocio
+    this.personalizarInterfaz();
 
-    // Si es trabajador, verificar que esté asignado a Impresión
-    if (userData.rol === 'trabajador' && userData.negocioId !== this.negocioId) {
-      alert('No tienes acceso a este negocio');
-      window.location.href = '/login.html';
-      return;
-    }
-
-    // Cargar datos iniciales
+    // Cargar datos
     await this.loadAll();
 
-    // Cargar plantillas guardadas
+    // Cargar plantillas
     this.loadPlantillas();
 
     // Setup event listeners
     this.setupEventListeners();
 
-    // Iniciar polling cada 15 segundos
+    // Iniciar polling
     this.startPolling();
+  },
+
+  personalizarInterfaz() {
+    const config = this.config.titulos[this.negocioTipo] || this.config.titulos['Impresión'];
+    const icono = this.config.iconos[this.negocioTipo] || '📋';
+
+    // Actualizar títulos
+    document.getElementById('modalTitulo').textContent = `${icono} ${config.nuevo}`;
+    document.getElementById('btnNuevoTexto').textContent = config.nuevo;
+    document.getElementById('tituloEnProceso').textContent = config.enProceso;
+    document.getElementById('labelPrecio').textContent = config.labelPrecio;
+
+    // Agregar campos específicos según tipo
+    this.renderCamposEspecificos();
+  },
+
+  renderCamposEspecificos() {
+    const containerTrabajo = document.getElementById('camposEspecificos');
+    const containerCliente = document.getElementById('camposClienteEspecificos');
+
+    // Campos específicos de Cabinas
+    if (this.negocioTipo === 'Cabinas') {
+      containerCliente.innerHTML = `
+        <div class="form-group">
+          <label class="form-label">Cédula</label>
+          <input type="text" id="clienteCedula" class="form-input" placeholder="0-0000-0000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Edad</label>
+          <input type="number" id="clienteEdad" class="form-input" min="0" placeholder="18">
+        </div>
+      `;
+    } else {
+      containerCliente.innerHTML = '';
+    }
+
+    containerTrabajo.innerHTML = '';
   },
 
   async loadNegocios() {
@@ -62,6 +130,32 @@ const impresionApp = {
       this.negocios = await API.negocios.getAll();
     } catch (error) {
       console.error('Error cargando negocios:', error);
+      alert('Error al cargar los negocios');
+    }
+  },
+
+  async loadClientes() {
+    try {
+      const todosClientes = await API.clientes.getAll();
+      
+      // Filtrar clientes según tipo de negocio
+      if (this.negocioTipo === 'Cabinas') {
+        this.clientes = todosClientes.filter(c => c.esCabina === true || c.esCabina === 1);
+      } else {
+        this.clientes = todosClientes.filter(c => !c.esCabina || c.esCabina === false || c.esCabina === 0);
+      }
+    } catch (error) {
+      console.error('Error cargando clientes:', error);
+      alert('Error al cargar los clientes');
+    }
+  },
+
+  async loadTrabajos() {
+    try {
+      const todosTrab = await API.trabajos.getAll();
+      this.trabajos = todosTrab.filter(t => t.negocioId === this.negocioId);
+    } catch (error) {
+      console.error('Error cargando trabajos:', error);
     }
   },
 
@@ -70,87 +164,17 @@ const impresionApp = {
       this.loadClientes(),
       this.loadTrabajos()
     ]);
+    this.renderClientesSelect();
+    this.renderTrabajos();
     this.updateStats();
     this.checkMobileView();
-  },
-
-  checkMobileView() {
-    const isMobile = window.innerWidth <= 768;
-    const container = document.querySelector('.trabajos-container');
-    const selector = document.getElementById('mobileStateSelector');
-    
-    if (container) {
-      if (isMobile) {
-        container.classList.add('mobile-single-view');
-        if (selector) selector.style.display = 'flex';
-        this.setupMobileNavigation();
-      } else {
-        container.classList.remove('mobile-single-view');
-        if (selector) selector.style.display = 'none';
-        // Mostrar todas las columnas en desktop
-        document.querySelectorAll('.trabajos-column').forEach(col => {
-          col.classList.remove('active');
-        });
-      }
-    }
-  },
-
-  setupMobileNavigation() {
-    const buttons = document.querySelectorAll('.mobile-state-btn');
-    const columns = document.querySelectorAll('.trabajos-column');
-
-    buttons.forEach(btn => {
-      btn.replaceWith(btn.cloneNode(true)); // Remove old listeners
-    });
-
-    document.querySelectorAll('.mobile-state-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const state = btn.dataset.state;
-        
-        // Update buttons
-        document.querySelectorAll('.mobile-state-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        // Update columns
-        columns.forEach(col => {
-          if (col.dataset.state === state) {
-            col.classList.add('active');
-          } else {
-            col.classList.remove('active');
-          }
-        });
-      });
-    });
-  },
-
-  async loadClientes() {
-    try {
-      const allClientes = await API.clientes.getAll();
-      // Impresión muestra clientes que no son de cabinas
-      this.clientes = allClientes.filter(c => c.esCabina !== true);
-      this.renderClientesSelect();
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-    }
-  },
-
-  async loadTrabajos() {
-    try {
-      const allTrabajos = await API.trabajos.getAll();
-      this.trabajos = allTrabajos.filter(t => t.negocioId === this.negocioId);
-      this.renderTrabajos();
-    } catch (error) {
-      console.error('Error cargando trabajos:', error);
-    }
   },
 
   renderClientesSelect() {
     const select = document.getElementById('trabajoCliente');
     if (!select) return;
-    
-    // Guardar valor seleccionado actual
+
     const currentValue = select.value;
-    
     select.innerHTML = '<option value="">Seleccionar cliente</option>';
     
     this.clientes.forEach(cliente => {
@@ -159,9 +183,8 @@ const impresionApp = {
       option.textContent = cliente.nombre;
       select.appendChild(option);
     });
-    
-    // Restaurar valor seleccionado si existe
-    if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+
+    if (currentValue) {
       select.value = currentValue;
     }
   },
@@ -175,7 +198,6 @@ const impresionApp = {
     enProceso.innerHTML = '';
     completados.innerHTML = '';
 
-    // Mostrar todos los trabajos completados
     this.trabajos.forEach(trabajo => {
       const card = this.createTrabajoCard(trabajo);
 
@@ -190,10 +212,10 @@ const impresionApp = {
 
     // Mensajes si no hay trabajos
     if (pendientes.children.length === 0) {
-      pendientes.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay trabajos en cola</p>';
+      pendientes.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay trabajos pendientes</p>';
     }
     if (enProceso.children.length === 0) {
-      enProceso.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay trabajos en proceso</p>';
+      enProceso.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay trabajos activos</p>';
     }
     if (completados.children.length === 0) {
       completados.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay trabajos completados</p>';
@@ -207,14 +229,37 @@ const impresionApp = {
     const cliente = this.clientes.find(c => c.id === trabajo.clienteId);
     const nombreCliente = cliente ? cliente.nombre : 'Cliente desconocido';
 
+    // Info específica por tipo de negocio
+    let infoExtra = '';
+    if (this.negocioTipo === 'Cabinas' && cliente) {
+      infoExtra = `
+        <div class="trabajo-info" style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 0.25rem; font-size: 0.85rem;">
+          ${cliente.cedula ? `<div>📋 Cédula: ${cliente.cedula}</div>` : ''}
+          ${cliente.edad ? `<div>👤 Edad: ${cliente.edad} años</div>` : ''}
+        </div>
+      `;
+    }
+
+    // Tiempo activo
+    let tiempoInfo = '';
+    if (trabajo.estado === 'en_proceso' && trabajo.fechaInicio) {
+      const inicio = new Date(trabajo.fechaInicio);
+      const ahora = new Date();
+      const minutos = Math.floor((ahora - inicio) / 60000);
+      const horas = Math.floor(minutos / 60);
+      const mins = minutos % 60;
+      tiempoInfo = `<span class="tiempo-activo">⏱️ ${horas}h ${mins}m</span>`;
+    }
+
     card.innerHTML = `
       <div class="trabajo-header">
         <div class="trabajo-cliente">${nombreCliente}</div>
         <span class="badge badge-${this.getEstadoColor(trabajo.estado)}">${this.getEstadoText(trabajo.estado)}</span>
       </div>
+      ${infoExtra}
       <div class="trabajo-descripcion">${trabajo.descripcion || 'Sin descripción'}</div>
       <div class="trabajo-footer">
-        <span class="trabajo-precio">${trabajo.precioEstimado ? '$' + parseFloat(trabajo.precioEstimado).toFixed(2) : 'Sin precio'}</span>
+        ${tiempoInfo || `<span class="trabajo-precio">${trabajo.precioEstimado ? '₡' + parseFloat(trabajo.precioEstimado).toFixed(2) : 'Sin precio'}</span>`}
         <span style="color: var(--text-gray);">${this.formatDate(trabajo.fechaCreacion)}</span>
       </div>
       <div class="trabajo-actions">
@@ -230,19 +275,19 @@ const impresionApp = {
 
     if (trabajo.estado === 'pendiente') {
       actions = `
-        <button class="btn btn-sm btn-primary" onclick="impresionApp.cambiarEstado(${trabajo.id}, 'en_proceso')">
-          ▶️ Iniciar Trabajo
+        <button class="btn btn-sm btn-primary" onclick="trabajoApp.cambiarEstado(${trabajo.id}, 'en_proceso')">
+          ▶️ Iniciar
         </button>
-        <button class="btn btn-sm btn-danger" onclick="impresionApp.cambiarEstado(${trabajo.id}, 'cancelado')">
+        <button class="btn btn-sm btn-danger" onclick="trabajoApp.cambiarEstado(${trabajo.id}, 'cancelado')">
           ❌ Cancelar
         </button>
       `;
     } else if (trabajo.estado === 'en_proceso') {
       actions = `
-        <button class="btn btn-sm btn-success" onclick="impresionApp.cambiarEstado(${trabajo.id}, 'completado')">
-          ✅ Finalizar Trabajo
+        <button class="btn btn-sm btn-success" onclick="trabajoApp.cambiarEstado(${trabajo.id}, 'completado')">
+          ✅ Finalizar
         </button>
-        <button class="btn btn-sm btn-warning" onclick="impresionApp.cambiarEstado(${trabajo.id}, 'pendiente')">
+        <button class="btn btn-sm btn-warning" onclick="trabajoApp.cambiarEstado(${trabajo.id}, 'pendiente')">
           ⏸️ Pausar
         </button>
       `;
@@ -254,8 +299,8 @@ const impresionApp = {
   getEstadoColor(estado) {
     const colors = {
       'pendiente': 'warning',
-      'en_proceso': 'primary',
-      'completado': 'success',
+      'en_proceso': 'success',
+      'completado': 'primary',
       'cancelado': 'danger'
     };
     return colors[estado] || 'secondary';
@@ -263,8 +308,8 @@ const impresionApp = {
 
   getEstadoText(estado) {
     const texts = {
-      'pendiente': 'En Cola',
-      'en_proceso': 'Imprimiendo',
+      'pendiente': 'Pendiente',
+      'en_proceso': 'Activo',
       'completado': 'Completado',
       'cancelado': 'Cancelado'
     };
@@ -301,9 +346,236 @@ const impresionApp = {
     document.getElementById('statPendientes').textContent = pendientes;
     document.getElementById('statEnProceso').textContent = enProceso;
     document.getElementById('statCompletados').textContent = completadosHoy.length;
-    document.getElementById('statGanancias').textContent = `₡${gananciasHoy.toLocaleString('es-CR', {minimumFractionDigits: 2})}`;
+    document.getElementById('statGanancias').textContent = `₡${gananciasHoy.toLocaleString('es-CR', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
   },
 
+  async cambiarEstado(trabajoId, nuevoEstado) {
+    try {
+      await API.trabajos.updateEstado(trabajoId, { estado: nuevoEstado });
+      await this.loadTrabajos();
+      this.renderTrabajos();
+      this.updateStats();
+      this.autoSwitchTab(nuevoEstado);
+    } catch (error) {
+      console.error('Error cambiando estado:', error);
+      alert('Error al cambiar el estado del trabajo');
+    }
+  },
+
+  autoSwitchTab(nuevoEstado) {
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) return;
+
+    const stateMap = {
+      'pendiente': 'pendiente',
+      'en_proceso': 'en_proceso',
+      'completado': 'completado'
+    };
+
+    const targetState = stateMap[nuevoEstado];
+    if (!targetState) return;
+
+    const targetBtn = document.querySelector(`.mobile-state-btn[data-state="${targetState}"]`);
+    const targetCol = document.querySelector(`.trabajos-column[data-state="${targetState}"]`);
+
+    if (targetBtn && targetCol) {
+      targetCol.style.opacity = '0';
+      
+      setTimeout(() => {
+        document.querySelectorAll('.mobile-state-btn').forEach(b => b.classList.remove('active'));
+        targetBtn.classList.add('active');
+        
+        document.querySelectorAll('.trabajos-column').forEach(col => col.classList.remove('active'));
+        targetCol.classList.add('active');
+        
+        setTimeout(() => {
+          targetCol.style.opacity = '1';
+        }, 50);
+      }, 300);
+    }
+  },
+
+  checkMobileView() {
+    const isMobile = window.innerWidth <= 768;
+    const container = document.querySelector('.trabajos-container');
+    const selector = document.getElementById('mobileStateSelector');
+    
+    if (container) {
+      if (isMobile) {
+        container.classList.add('mobile-single-view');
+        if (selector) selector.style.display = 'flex';
+        this.setupMobileNavigation();
+      } else {
+        container.classList.remove('mobile-single-view');
+        if (selector) selector.style.display = 'none';
+        document.querySelectorAll('.trabajos-column').forEach(col => {
+          col.classList.remove('active');
+        });
+      }
+    }
+  },
+
+  setupMobileNavigation() {
+    const buttons = document.querySelectorAll('.mobile-state-btn');
+    const columns = document.querySelectorAll('.trabajos-column');
+
+    buttons.forEach(btn => {
+      btn.replaceWith(btn.cloneNode(true));
+    });
+
+    document.querySelectorAll('.mobile-state-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const state = btn.dataset.state;
+        
+        document.querySelectorAll('.mobile-state-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        columns.forEach(col => {
+          if (col.dataset.state === state) {
+            col.classList.add('active');
+          } else {
+            col.classList.remove('active');
+          }
+        });
+      });
+    });
+  },
+
+  // Sistema de Plantillas
+  loadPlantillas() {
+    const key = `${this.negocioTipo.toLowerCase()}_plantillas`;
+    const saved = localStorage.getItem(key);
+    
+    if (saved) {
+      this.plantillas = JSON.parse(saved);
+    } else {
+      // Plantillas por defecto según tipo
+      this.plantillas = this.getPlantillasDefault();
+    }
+    
+    this.renderQuickAccess();
+    this.renderPlantillasList();
+  },
+
+  getPlantillasDefault() {
+    const defaults = {
+      'Cabinas': [
+        {texto: '1 noche', precio: 1000},
+        {texto: '2 noches', precio: 2000},
+        {texto: 'Tareas', precio: 500}
+      ],
+      'Lavacar': [
+        {texto: 'Lavado completo', precio: 5000},
+        {texto: 'Encerado', precio: 3000}
+      ],
+      'Impresión': [
+        {texto: '10 copias B/N', precio: 500},
+        {texto: 'Anillado', precio: 1500}
+      ]
+    };
+    return defaults[this.negocioTipo] || [];
+  },
+
+  savePlantillas() {
+    const key = `${this.negocioTipo.toLowerCase()}_plantillas`;
+    localStorage.setItem(key, JSON.stringify(this.plantillas));
+  },
+
+  renderQuickAccess() {
+    const container = document.getElementById('quickAccessButtons');
+    if (!container) return;
+
+    container.innerHTML = this.plantillas.map((plantilla, index) => {
+      const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
+      const precio = typeof plantilla === 'object' && plantilla.precio ? ` - ₡${plantilla.precio}` : '';
+      return `
+        <button type="button" class="quick-access-btn" onclick="trabajoApp.aplicarPlantilla(${index})">
+          ${texto}${precio}
+        </button>
+      `;
+    }).join('');
+  },
+
+  aplicarPlantilla(index) {
+    const plantilla = this.plantillas[index];
+    const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
+    const precio = typeof plantilla === 'object' && plantilla.precio ? plantilla.precio : null;
+    
+    const descripcionInput = document.getElementById('trabajoDescripcion');
+    const precioInput = document.getElementById('trabajoPrecio');
+    
+    if (descripcionInput) {
+      descripcionInput.value = texto;
+      descripcionInput.focus();
+    }
+    
+    if (precioInput && precio !== null) {
+      precioInput.value = precio;
+    }
+  },
+
+  renderPlantillasList() {
+    const container = document.getElementById('plantillasList');
+    if (!container) return;
+
+    if (this.plantillas.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay plantillas guardadas</p>';
+      return;
+    }
+
+    container.innerHTML = this.plantillas.map((plantilla, index) => {
+      const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
+      const precio = typeof plantilla === 'object' && plantilla.precio ? ` - ₡${plantilla.precio}` : '';
+      return `
+        <div class="plantilla-item">
+          <span class="plantilla-item-text">${texto}${precio}</span>
+          <button class="plantilla-item-delete" onclick="trabajoApp.eliminarPlantilla(${index})">
+            🗑️
+          </button>
+        </div>
+      `;
+    }).join('');
+  },
+
+  agregarPlantilla() {
+    const inputNombre = document.getElementById('nuevaPlantillaNombre');
+    const inputPrecio = document.getElementById('nuevaPlantillaPrecio');
+    const nombre = inputNombre.value.trim();
+    const precio = parseFloat(inputPrecio.value) || null;
+
+    if (!nombre) {
+      alert('Ingrese un nombre para la plantilla');
+      return;
+    }
+
+    const existe = this.plantillas.some(p => {
+      const texto = typeof p === 'string' ? p : p.texto;
+      return texto === nombre;
+    });
+
+    if (existe) {
+      alert('Esta plantilla ya existe');
+      return;
+    }
+
+    this.plantillas.push({texto: nombre, precio: precio});
+    this.savePlantillas();
+    this.renderQuickAccess();
+    this.renderPlantillasList();
+    inputNombre.value = '';
+    inputPrecio.value = '';
+  },
+
+  eliminarPlantilla(index) {
+    if (confirm('¿Eliminar esta plantilla?')) {
+      this.plantillas.splice(index, 1);
+      this.savePlantillas();
+      this.renderQuickAccess();
+      this.renderPlantillasList();
+    }
+  },
+
+  // Ganancias
   calcularGanancias() {
     const hoy = new Date();
     const hoyStr = hoy.toISOString().split('T')[0];
@@ -358,175 +630,8 @@ const impresionApp = {
     }
   },
 
-  async cambiarEstado(trabajoId, nuevoEstado) {
-    try {
-      await API.trabajos.updateEstado(trabajoId, { estado: nuevoEstado });
-      await this.loadTrabajos();
-      this.updateStats();
-      
-      // Auto-cambiar pestaña en móvil con animación
-      this.autoSwitchTab(nuevoEstado);
-    } catch (error) {
-      console.error('Error cambiando estado:', error);
-      alert('Error al cambiar el estado del trabajo');
-    }
-  },
-
-  autoSwitchTab(nuevoEstado) {
-    const isMobile = window.innerWidth <= 768;
-    if (!isMobile) return;
-
-    const stateMap = {
-      'pendiente': 'pendiente',
-      'en_proceso': 'en_proceso',
-      'completado': 'completado'
-    };
-
-    const targetState = stateMap[nuevoEstado];
-    if (!targetState) return;
-
-    const targetBtn = document.querySelector(`.mobile-state-btn[data-state="${targetState}"]`);
-    const targetCol = document.querySelector(`.trabajos-column[data-state="${targetState}"]`);
-
-    if (targetBtn && targetCol) {
-      // Animar cambio
-      targetCol.style.opacity = '0';
-      
-      setTimeout(() => {
-        // Actualizar botones
-        document.querySelectorAll('.mobile-state-btn').forEach(b => b.classList.remove('active'));
-        targetBtn.classList.add('active');
-        
-        // Actualizar columnas
-        document.querySelectorAll('.trabajos-column').forEach(col => col.classList.remove('active'));
-        targetCol.classList.add('active');
-        
-        // Fade in
-        setTimeout(() => {
-          targetCol.style.opacity = '1';
-        }, 50);
-      }, 300);
-    }
-  },
-
-  // Sistema de Plantillas
-  loadPlantillas() {
-    const saved = localStorage.getItem('impresion_plantillas');
-    if (saved) {
-      this.plantillas = JSON.parse(saved);
-    } else {
-      this.plantillas = [
-        {texto: '10 copias B/N', precio: 500},
-        {texto: '5 copias color', precio: 1000},
-        {texto: 'Anillado', precio: 1500},
-        {texto: 'Impresión A4', precio: 100},
-        {texto: 'Escaneo', precio: 200}
-      ];
-    }
-    this.renderQuickAccess();
-    this.renderPlantillasList();
-  },
-
-  savePlantillas() {
-    localStorage.setItem('impresion_plantillas', JSON.stringify(this.plantillas));
-  },
-
-  renderQuickAccess() {
-    const container = document.getElementById('quickAccessButtons');
-    if (!container) return;
-
-    container.innerHTML = this.plantillas.map((plantilla, index) => {
-      const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
-      const precio = typeof plantilla === 'object' && plantilla.precio ? ` - ₡${plantilla.precio}` : '';
-      return `
-        <button type="button" class="quick-access-btn" onclick="impresionApp.aplicarPlantilla(${index})">
-          ${texto}${precio}
-        </button>
-      `;
-    }).join('');
-  },
-
-  aplicarPlantilla(index) {
-    const plantilla = this.plantillas[index];
-    const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
-    const precio = typeof plantilla === 'object' && plantilla.precio ? plantilla.precio : null;
-    
-    const descripcionInput = document.getElementById('trabajoDescripcion');
-    const precioInput = document.getElementById('trabajoPrecio');
-    
-    if (descripcionInput) {
-      descripcionInput.value = texto;
-      descripcionInput.focus();
-    }
-    
-    if (precioInput && precio !== null) {
-      precioInput.value = precio;
-    }
-  },
-
-  renderPlantillasList() {
-    const container = document.getElementById('plantillasList');
-    if (!container) return;
-
-    if (this.plantillas.length === 0) {
-      container.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay plantillas guardadas</p>';
-      return;
-    }
-
-    container.innerHTML = this.plantillas.map((plantilla, index) => {
-      const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
-      const precio = typeof plantilla === 'object' && plantilla.precio ? ` - ₡${plantilla.precio}` : '';
-      return `
-        <div class="plantilla-item">
-          <span class="plantilla-item-text">${texto}${precio}</span>
-          <button class="plantilla-item-delete" onclick="impresionApp.eliminarPlantilla(${index})">
-            🗑️ Eliminar
-          </button>
-        </div>
-      `;
-    }).join('');
-  },
-
-  agregarPlantilla() {
-    const inputNombre = document.getElementById('nuevaPlantillaNombre');
-    const inputPrecio = document.getElementById('nuevaPlantillaPrecio');
-    const nombre = inputNombre.value.trim();
-    const precio = parseFloat(inputPrecio.value) || null;
-
-    if (!nombre) {
-      alert('Ingrese un nombre para la plantilla');
-      return;
-    }
-
-    const existe = this.plantillas.some(p => {
-      const texto = typeof p === 'string' ? p : p.texto;
-      return texto === nombre;
-    });
-
-    if (existe) {
-      alert('Esta plantilla ya existe');
-      return;
-    }
-
-    this.plantillas.push({texto: nombre, precio: precio});
-    this.savePlantillas();
-    this.renderQuickAccess();
-    this.renderPlantillasList();
-    inputNombre.value = '';
-    inputPrecio.value = '';
-  },
-
-  eliminarPlantilla(index) {
-    if (confirm('¿Eliminar esta plantilla?')) {
-      this.plantillas.splice(index, 1);
-      this.savePlantillas();
-      this.renderQuickAccess();
-      this.renderPlantillasList();
-    }
-  },
-
+  // Event Listeners
   setupEventListeners() {
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       API.auth.logout();
     });
@@ -547,8 +652,7 @@ const impresionApp = {
         await API.trabajos.create(data);
         this.closeModal('nuevoTrabajo');
         e.target.reset();
-        await this.loadTrabajos();
-        this.updateStats();
+        await this.loadAll();
       } catch (error) {
         console.error('Error creando trabajo:', error);
         alert('Error al crear el trabajo');
@@ -563,14 +667,23 @@ const impresionApp = {
         nombre: document.getElementById('clienteNombre').value,
         telefono: document.getElementById('clienteTelefono').value || null,
         notaExtra: document.getElementById('clienteNota').value || null,
-        esCabina: false
+        esCabina: this.negocioTipo === 'Cabinas'
       };
+
+      // Campos específicos de Cabinas
+      if (this.negocioTipo === 'Cabinas') {
+        const cedulaInput = document.getElementById('clienteCedula');
+        const edadInput = document.getElementById('clienteEdad');
+        if (cedulaInput) data.cedula = cedulaInput.value || null;
+        if (edadInput) data.edad = parseInt(edadInput.value) || null;
+      }
 
       try {
         await API.clientes.create(data);
         this.closeModal('nuevoCliente');
         e.target.reset();
         await this.loadClientes();
+        this.renderClientesSelect();
       } catch (error) {
         console.error('Error creando cliente:', error);
         alert('Error al crear el cliente');
@@ -609,9 +722,9 @@ const impresionApp = {
   }
 };
 
-// Iniciar cuando el DOM esté listo
+// Init
 document.addEventListener('DOMContentLoaded', () => {
-  impresionApp.init();
+  trabajoApp.init();
 });
 
 // Cerrar modales al hacer clic fuera
@@ -626,8 +739,8 @@ let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    if (impresionApp.checkMobileView) {
-      impresionApp.checkMobileView();
+    if (trabajoApp.checkMobileView) {
+      trabajoApp.checkMobileView();
     }
   }, 250);
 });

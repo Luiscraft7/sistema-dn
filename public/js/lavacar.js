@@ -5,6 +5,7 @@ const lavacarApp = {
   clientes: [],
   trabajos: [],
   pollingInterval: null,
+  plantillas: [],
 
   async init() {
     // Verificar token
@@ -45,6 +46,9 @@ const lavacarApp = {
 
     // Cargar datos iniciales
     await this.loadAll();
+
+    // Cargar plantillas guardadas
+    this.loadPlantillas();
 
     // Setup event listeners
     this.setupEventListeners();
@@ -227,7 +231,7 @@ const lavacarApp = {
     if (trabajo.estado === 'pendiente') {
       actions = `
         <button class="btn btn-sm btn-primary" onclick="lavacarApp.cambiarEstado(${trabajo.id}, 'en_proceso')">
-          ▶️ Iniciar
+          ▶️ Iniciar Trabajo
         </button>
         <button class="btn btn-sm btn-danger" onclick="lavacarApp.cambiarEstado(${trabajo.id}, 'cancelado')">
           ❌ Cancelar
@@ -236,7 +240,7 @@ const lavacarApp = {
     } else if (trabajo.estado === 'en_proceso') {
       actions = `
         <button class="btn btn-sm btn-success" onclick="lavacarApp.cambiarEstado(${trabajo.id}, 'completado')">
-          ✅ Completar
+          ✅ Finalizar Trabajo
         </button>
         <button class="btn btn-sm btn-warning" onclick="lavacarApp.cambiarEstado(${trabajo.id}, 'pendiente')">
           ⏸️ Pausar
@@ -288,11 +292,71 @@ const lavacarApp = {
       if (t.estado !== 'completado') return false;
       const fecha = t.fechaCompletado?.split('T')[0];
       return fecha === hoy;
-    }).length;
+    });
+
+    // Calcular ganancias de hoy
+    const gananciasHoy = completadosHoy.reduce((total, t) => {
+      return total + (parseFloat(t.precioEstimado) || 0);
+    }, 0);
 
     document.getElementById('statPendientes').textContent = pendientes;
     document.getElementById('statEnProceso').textContent = enProceso;
-    document.getElementById('statCompletados').textContent = completadosHoy;
+    document.getElementById('statCompletados').textContent = completadosHoy.length;
+    document.getElementById('statGanancias').textContent = `₡${gananciasHoy.toLocaleString('es-CR', {minimumFractionDigits: 2})}`;
+  },
+
+  calcularGanancias() {
+    const hoy = new Date();
+    const hoyStr = hoy.toISOString().split('T')[0];
+    
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay() + 1);
+    const inicioSemanaStr = inicioSemana.toISOString().split('T')[0];
+    
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const inicioMesStr = inicioMes.toISOString().split('T')[0];
+    
+    const completados = this.trabajos.filter(t => t.estado === 'completado' && t.fechaCompletado);
+    
+    const hoyTrabajos = completados.filter(t => t.fechaCompletado.split('T')[0] === hoyStr);
+    const semanaTrabajos = completados.filter(t => t.fechaCompletado.split('T')[0] >= inicioSemanaStr);
+    const mesTrabajos = completados.filter(t => t.fechaCompletado.split('T')[0] >= inicioMesStr);
+    
+    return {
+      hoy: hoyTrabajos.reduce((sum, t) => sum + (parseFloat(t.precioEstimado) || 0), 0),
+      semana: semanaTrabajos.reduce((sum, t) => sum + (parseFloat(t.precioEstimado) || 0), 0),
+      mes: mesTrabajos.reduce((sum, t) => sum + (parseFloat(t.precioEstimado) || 0), 0),
+      total: completados.reduce((sum, t) => sum + (parseFloat(t.precioEstimado) || 0), 0),
+      trabajosHoy: hoyTrabajos
+    };
+  },
+
+  mostrarGanancias() {
+    const ganancias = this.calcularGanancias();
+    
+    document.getElementById('gananciaHoy').textContent = `₡${ganancias.hoy.toLocaleString('es-CR', {minimumFractionDigits: 2})}`;
+    document.getElementById('gananciaSemana').textContent = `₡${ganancias.semana.toLocaleString('es-CR', {minimumFractionDigits: 2})}`;
+    document.getElementById('gananciaMes').textContent = `₡${ganancias.mes.toLocaleString('es-CR', {minimumFractionDigits: 2})}`;
+    document.getElementById('gananciaTotal').textContent = `₡${ganancias.total.toLocaleString('es-CR', {minimumFractionDigits: 2})}`;
+    
+    const container = document.getElementById('trabajosCompletadosHoy');
+    if (ganancias.trabajosHoy.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay trabajos completados hoy</p>';
+    } else {
+      container.innerHTML = ganancias.trabajosHoy.map(trabajo => {
+        const cliente = this.clientes.find(c => c.id === trabajo.clienteId);
+        const precio = parseFloat(trabajo.precioEstimado) || 0;
+        return `
+          <div class="trabajo-ganancia-item">
+            <div class="trabajo-ganancia-info">
+              <div class="trabajo-ganancia-cliente">${cliente ? cliente.nombre : 'Sin cliente'}</div>
+              <div class="trabajo-ganancia-desc">${trabajo.descripcion || 'Sin descripción'}</div>
+            </div>
+            <div class="trabajo-ganancia-precio">₡${precio.toLocaleString('es-CR', {minimumFractionDigits: 2})}</div>
+          </div>
+        `;
+      }).join('');
+    }
   },
 
   async cambiarEstado(trabajoId, nuevoEstado) {
@@ -300,9 +364,165 @@ const lavacarApp = {
       await API.trabajos.updateEstado(trabajoId, { estado: nuevoEstado });
       await this.loadTrabajos();
       this.updateStats();
+      
+      // Auto-cambiar pestaña en móvil con animación
+      this.autoSwitchTab(nuevoEstado);
     } catch (error) {
       console.error('Error cambiando estado:', error);
       alert('Error al cambiar el estado del trabajo');
+    }
+  },
+
+  autoSwitchTab(nuevoEstado) {
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) return;
+
+    const stateMap = {
+      'pendiente': 'pendiente',
+      'en_proceso': 'en_proceso',
+      'completado': 'completado'
+    };
+
+    const targetState = stateMap[nuevoEstado];
+    if (!targetState) return;
+
+    const targetBtn = document.querySelector(`.mobile-state-btn[data-state="${targetState}"]`);
+    const targetCol = document.querySelector(`.trabajos-column[data-state="${targetState}"]`);
+
+    if (targetBtn && targetCol) {
+      // Animar cambio
+      targetCol.style.opacity = '0';
+      
+      setTimeout(() => {
+        // Actualizar botones
+        document.querySelectorAll('.mobile-state-btn').forEach(b => b.classList.remove('active'));
+        targetBtn.classList.add('active');
+        
+        // Actualizar columnas
+        document.querySelectorAll('.trabajos-column').forEach(col => col.classList.remove('active'));
+        targetCol.classList.add('active');
+        
+        // Fade in
+        setTimeout(() => {
+          targetCol.style.opacity = '1';
+        }, 50);
+      }, 300);
+    }
+  },
+
+  // Sistema de Plantillas
+  loadPlantillas() {
+    const saved = localStorage.getItem('lavacar_plantillas');
+    if (saved) {
+      this.plantillas = JSON.parse(saved);
+    } else {
+      this.plantillas = [
+        {texto: 'Lavado completo', precio: 5000},
+        {texto: 'Encerado', precio: 3000},
+        {texto: 'Limpieza interior', precio: 2500},
+        {texto: 'Solo exterior', precio: 3500},
+        {texto: 'Pulido', precio: 4000}
+      ];
+    }
+    this.renderQuickAccess();
+    this.renderPlantillasList();
+  },
+
+  savePlantillas() {
+    localStorage.setItem('lavacar_plantillas', JSON.stringify(this.plantillas));
+  },
+
+  renderQuickAccess() {
+    const container = document.getElementById('quickAccessButtons');
+    if (!container) return;
+
+    container.innerHTML = this.plantillas.map((plantilla, index) => {
+      const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
+      const precio = typeof plantilla === 'object' && plantilla.precio ? ` - ₡${plantilla.precio}` : '';
+      return `
+        <button type="button" class="quick-access-btn" onclick="lavacarApp.aplicarPlantilla(${index})">
+          ${texto}${precio}
+        </button>
+      `;
+    }).join('');
+  },
+
+  aplicarPlantilla(index) {
+    const plantilla = this.plantillas[index];
+    const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
+    const precio = typeof plantilla === 'object' && plantilla.precio ? plantilla.precio : null;
+    
+    const descripcionInput = document.getElementById('trabajoDescripcion');
+    const precioInput = document.getElementById('trabajoPrecio');
+    
+    if (descripcionInput) {
+      descripcionInput.value = texto;
+      descripcionInput.focus();
+    }
+    
+    if (precioInput && precio !== null) {
+      precioInput.value = precio;
+    }
+  },
+
+  renderPlantillasList() {
+    const container = document.getElementById('plantillasList');
+    if (!container) return;
+
+    if (this.plantillas.length === 0) {
+      container.innerHTML = '<p style="color: var(--text-gray); text-align: center; padding: 1rem;">No hay plantillas guardadas</p>';
+      return;
+    }
+
+    container.innerHTML = this.plantillas.map((plantilla, index) => {
+      const texto = typeof plantilla === 'string' ? plantilla : plantilla.texto;
+      const precio = typeof plantilla === 'object' && plantilla.precio ? ` - ₡${plantilla.precio}` : '';
+      return `
+        <div class="plantilla-item">
+          <span class="plantilla-item-text">${texto}${precio}</span>
+          <button class="plantilla-item-delete" onclick="lavacarApp.eliminarPlantilla(${index})">
+            🗑️ Eliminar
+          </button>
+        </div>
+      `;
+    }).join('');
+  },
+
+  agregarPlantilla() {
+    const inputNombre = document.getElementById('nuevaPlantillaNombre');
+    const inputPrecio = document.getElementById('nuevaPlantillaPrecio');
+    const nombre = inputNombre.value.trim();
+    const precio = parseFloat(inputPrecio.value) || null;
+
+    if (!nombre) {
+      alert('Ingrese un nombre para la plantilla');
+      return;
+    }
+
+    const existe = this.plantillas.some(p => {
+      const texto = typeof p === 'string' ? p : p.texto;
+      return texto === nombre;
+    });
+
+    if (existe) {
+      alert('Esta plantilla ya existe');
+      return;
+    }
+
+    this.plantillas.push({texto: nombre, precio: precio});
+    this.savePlantillas();
+    this.renderQuickAccess();
+    this.renderPlantillasList();
+    inputNombre.value = '';
+    inputPrecio.value = '';
+  },
+
+  eliminarPlantilla(index) {
+    if (confirm('¿Eliminar esta plantilla?')) {
+      this.plantillas.splice(index, 1);
+      this.savePlantillas();
+      this.renderQuickAccess();
+      this.renderPlantillasList();
     }
   },
 
@@ -363,6 +583,10 @@ const lavacarApp = {
     const modal = document.getElementById(`modal${name.charAt(0).toUpperCase() + name.slice(1)}`);
     if (modal) {
       modal.style.display = 'flex';
+      
+      if (name === 'ganancias') {
+        this.mostrarGanancias();
+      }
     }
   },
 

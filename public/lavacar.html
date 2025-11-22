@@ -39,6 +39,11 @@
         <div class="stat-value" id="statCompletados">0</div>
         <div class="stat-label">Completados Hoy</div>
       </div>
+      <div class="stat-card stat-card-ganancias" onclick="lavacarApp.showModal('ganancias')" style="cursor: pointer;">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" id="statGanancias">₡0</div>
+        <div class="stat-label">Ganancias Hoy</div>
+      </div>
     </div>
 
     <!-- Acciones rápidas -->
@@ -82,6 +87,17 @@
         <button class="modal-close" onclick="lavacarApp.closeModal('nuevoTrabajo')">&times;</button>
       </div>
       <form id="formNuevoTrabajo" class="modal-body">
+        <!-- Accesos Rápidos -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label class="form-label" style="margin: 0;">⚡ Accesos Rápidos</label>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="lavacarApp.showModal('gestionarPlantillas')" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+              ⚙️ Gestionar
+            </button>
+          </div>
+          <div id="quickAccessButtons" class="quick-access-buttons"></div>
+        </div>
+
         <div class="form-group">
           <label class="form-label">Cliente *</label>
           <select id="trabajoCliente" class="form-input" required>
@@ -147,6 +163,80 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Ganancias -->
+  <div id="modalGanancias" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>💰 Ganancias - Lavacar</h2>
+        <button class="modal-close" onclick="lavacarApp.closeModal('ganancias')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="ganancias-stats">
+          <div class="ganancia-item">
+            <span class="ganancia-label">📅 Hoy:</span>
+            <span class="ganancia-value" id="gananciaHoy">₡0</span>
+          </div>
+          <div class="ganancia-item">
+            <span class="ganancia-label">📆 Esta Semana:</span>
+            <span class="ganancia-value" id="gananciaSemana">₡0</span>
+          </div>
+          <div class="ganancia-item">
+            <span class="ganancia-label">📊 Este Mes:</span>
+            <span class="ganancia-value" id="gananciaMes">₡0</span>
+          </div>
+          <div class="ganancia-item total">
+            <span class="ganancia-label">💎 Total Acumulado:</span>
+            <span class="ganancia-value" id="gananciaTotal">₡0</span>
+          </div>
+        </div>
+        
+        <div class="ganancias-detalles">
+          <h3 style="margin-bottom: 1rem;">Trabajos Completados Hoy</h3>
+          <div id="trabajosCompletadosHoy" class="trabajos-ganancias-list"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="lavacarApp.closeModal('ganancias')">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Gestionar Plantillas -->
+  <div id="modalGestionarPlantillas" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ Gestionar Accesos Rápidos</h2>
+        <button class="modal-close" onclick="lavacarApp.closeModal('gestionarPlantillas')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nueva Plantilla</label>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="text" id="nuevaPlantillaNombre" class="form-input" placeholder="Ej: Lavado completo..." style="flex: 2; min-width: 200px;">
+            <input type="number" id="nuevaPlantillaPrecio" class="form-input" placeholder="Precio (opcional)" step="0.01" min="0" style="flex: 1; min-width: 120px;">
+            <button type="button" class="btn btn-primary" onclick="lavacarApp.agregarPlantilla()">
+              ➕ Agregar
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Plantillas Actuales</label>
+          <div id="plantillasList" class="plantillas-list"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="lavacarApp.closeModal('gestionarPlantillas')">
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
